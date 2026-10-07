@@ -577,3 +577,81 @@ def record_expense(*, owner, order_id, amount, date, description, key, reverses=
         reason=description,
     )
     return finish(op, {"expense": str(expense.pk)})
+
+
+@transaction.atomic
+def confirm_completion(*, owner, order_id, key, state, rows, complete, payment=None):
+    """Apply the reviewed facts together; a stale review cannot overwrite progress."""
+    op, repeated = begin_operation(
+        owner,
+        key,
+        "confirm_completion",
+        {
+            "order": order_id,
+            "state": state,
+            "rows": rows,
+            "complete": complete,
+            "payment": payment,
+        },
+    )
+    if repeated:
+        return op.result
+    order = get_object_or_404(
+        Order.objects.select_for_update(), pk=order_id, owner=owner
+    )
+    items = list(order.items.filter(retired=False).order_by("pk"))
+    current = completion_state(order, items)
+    if current != state:
+        raise ValidationError(
+            "O pedido mudou desde esta revisão. Volte ao pedido e confira os dados atualizados."
+        )
+    if order.status == "cancelled":
+        raise ValidationError(
+            "Reabra o pedido cancelado antes de registrar alterações."
+        )
+    if len(rows) != len(items) or {str(row["item_id"]) for row in rows} != {
+        str(item.pk) for item in items
+    }:
+        raise ValidationError("A lista de peças mudou. Atualize a revisão.")
+    by_id = {str(row["item_id"]): row for row in rows}
+    for item in items:
+        row = by_id[str(item.pk)]
+        if row["produced"] != item.produced:
+            record_produced(owner=owner, item_id=item.pk, quantity=row["produced"])
+        if row["delivery"]:
+            deliver_item(
+                owner=owner,
+                item_id=item.pk,
+                quantity=row["delivery"],
+                key=uuid.uuid5(key, str(item.pk)),
+                notes="Entrega confirmada na revisão do pedido",
+            )
+    if complete:
+        close_order(owner=owner, order_id=order.pk, status="completed")
+    if payment:
+        from finance.services import record_payment
+
+        record_payment(
+            owner=owner,
+            version_id=order.current_version_id,
+            key=uuid.uuid5(key, "payment"),
+            **payment,
+        )
+    return finish(op, {"order": str(order.pk)})
+
+
+def completion_state(order, items):
+    return {
+        "version": str(order.current_version_id),
+        "status": order.status,
+        "received": str(order.net_received),
+        "items": [
+            {
+                "id": str(item.pk),
+                "quantity": item.quantity,
+                "produced": item.produced,
+                "delivered": item.delivered,
+            }
+            for item in items
+        ],
+    }

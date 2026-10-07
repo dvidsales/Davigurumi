@@ -7,6 +7,7 @@ urlpatterns = [
     path("calendario/", views.calendar, name="calendar"),
     path("aprovar/<uuid:pk>/pedido/", views.convert, name="convert"),
     path("<uuid:pk>/", views.detail, name="detail"),
+    path("<uuid:pk>/conferir/", views.completion, name="completion"),
     path("<uuid:pk>/acao/", views.action, name="action"),
     path("<uuid:pk>/despesa/", views.expense, name="expense"),
     path("<uuid:pk>/configuracao/", views.settings, name="settings"),

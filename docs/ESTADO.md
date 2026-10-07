@@ -1,6 +1,6 @@
 # Estado para continuidade — 07/10/2026
 
-Repositório `/workspace/Davigurumi`, branch `feat/usability-feedback`. PRs #1–#5 incorporados à main. Os ajustes do feedback de interface estão no [PR #6](https://github.com/dvidsales/Davigurumi/pull/6), aberto para revisão. Não apagar `.local/` ou recriar o projeto. O usuário pediu manter a aplicação fora de uso público; nenhum merge ou deploy desta continuidade foi autorizado.
+Repositório `/workspace/Davigurumi`, branch `feat/confirm-order-completion`, baseada na main após PRs #1–#7 incorporados. A revisão conjunta de produção, entrega e recebimento está pronta para revisão. Não apagar `.local/` ou recriar o projeto; não fazer deploy público ou merge sem autorização.
 
 O app evoluiu de contas/materiais/calculadora para os módulos documentados no README. PostgreSQL 17 foi iniciado e validado em Docker. SQLite anterior continua disponível e recebeu migrações compatíveis. Ambos são bancos diferentes.
 

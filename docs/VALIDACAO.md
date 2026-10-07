@@ -81,3 +81,9 @@ Capturas novas, com dados fictícios, em docs/images: materiais-feedback.png, co
 ### Acesso após aceite do cliente
 
 Pedidos agora lista aprovações atuais ainda não convertidas; caixa oferece acesso às aprovações para registrar recebimento. Teste de regressão usa publicação e aceite reais pelo serviço, confirma conversão pela aba de produção, desaparecimento da lista pendente, preservação do acesso financeiro e isolamento entre contas. Aprovar não cria pedido nem pagamento automaticamente. Os 16 testes de usabilidade, produção e financeiro passaram no PostgreSQL e SQLite.
+
+## Conclusão simplificada da encomenda
+
+169 testes passaram no PostgreSQL; SQLite executou 169 com 5 exclusivos ignorados (164 passaram). Quatro novos testes verificam saldo e meio sugeridos, confirmação única com reenvio idempotente, edição parcial sem pagamento implícito, rollback integral quando o recebimento é inválido, revisão desatualizada/assinatura adulterada/peça estrangeira e isolamento entre contas. Nenhum teste anterior foi removido.
+
+Chromium em base sintética confirmou produção/entrega/quitação numa revisão, saldo de 80 após sinal de 20 num pedido de 100, e ausência de pagamento pré-confirmado. Tela a 1440, 768 e 360 px sem overflow, erros JS/5xx ou violações automáticas WCAG 2 A/AA e 2.1 AA; injeção do axe usa bypass CSP apenas no navegador de teste, sem alterar a política da aplicação. Captura com dados fictícios em `docs/images/conclusao-encomenda.png`. Check Django, migrações e Bandit sem achados médios/altos passaram. Sem deploy público.

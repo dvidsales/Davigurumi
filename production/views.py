@@ -167,7 +167,20 @@ def item_action(request, pk, action):
 
         raise Http404
     kwargs = {"owner": request.user, "item": item} if action == "consume" else {}
-    form = forms[action](request.POST or None, **kwargs)
+    initial = {}
+    description = item.description
+    if action == "produced":
+        initial["quantity"] = item.quantity
+        description += f" · Já produzido: {item.produced}. Sugerimos o total contratado: {item.quantity}. Confira ou edite."
+    elif action == "delivery":
+        available = max(0, item.produced - item.delivered)
+        initial["quantity"] = available or None
+        description += f" · Produzido: {item.produced} · Já entregue: {item.delivered} · Disponível para entregar: {available}."
+        if not available:
+            description += " Registre as peças prontas primeiro ou use Conferir e finalizar encomenda no pedido."
+    form = forms[action](
+        request.POST if request.method == "POST" else None, initial=initial, **kwargs
+    )
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
         try:
@@ -202,7 +215,12 @@ def item_action(request, pk, action):
     return render(
         request,
         "generic_form.html",
-        {"form": form, "heading": titles[action], "description": item.description},
+        {
+            "form": form,
+            "heading": titles[action],
+            "description": description,
+            "submit_label": "Confirmar registro",
+        },
     )
 
 
@@ -436,3 +454,100 @@ def calendar(request):
             status__in=["waiting", "in_progress", "paused"],
         )
     return render(request, "production/calendar.html", context)
+
+
+@never_cache
+@login_required
+def completion(request, pk):
+    from django import forms as django_forms
+    from django.core import signing
+    from .forms import CompletionForm, CompletionItemForm
+
+    order = get_object_or_404(
+        Order.objects.select_related(
+            "current_version", "approved_version__quote__client"
+        ),
+        pk=pk,
+        owner=request.user,
+    )
+    items = list(order.items.filter(retired=False).order_by("pk"))
+    latest = (
+        order.allocations.select_related("payment")
+        .order_by("-payment__date", "-payment__created_at")
+        .first()
+    )
+    initial = {
+        "state": signing.dumps(
+            services.completion_state(order, items), salt="order-completion"
+        ),
+        "amount": order.balance or None,
+        "method": latest.payment.method if latest else "pix",
+        "complete": order.status != "cancelled",
+    }
+    form = CompletionForm(
+        request.POST if request.method == "POST" else None, initial=initial
+    )
+    factory = django_forms.formset_factory(
+        CompletionItemForm, extra=0, max_num=50, validate_max=True
+    )
+    rows = factory(
+        request.POST if request.method == "POST" else None,
+        prefix="items",
+        initial=[
+            {
+                "item_id": item.pk,
+                "produced": item.quantity,
+                "delivery": item.quantity - item.delivered,
+            }
+            for item in items
+        ],
+    )
+    if request.method == "POST":
+        valid_form, valid_rows = form.is_valid(), rows.is_valid()
+        if valid_form and valid_rows:
+            data = form.cleaned_data
+            try:
+                state = signing.loads(
+                    data["state"], salt="order-completion", max_age=86400
+                )
+                payment = (
+                    {
+                        name: data[name]
+                        for name in (
+                            "amount",
+                            "date",
+                            "method",
+                            "notes",
+                            "allow_credit",
+                        )
+                    }
+                    if data["receive_payment"]
+                    else None
+                )
+                services.confirm_completion(
+                    owner=request.user,
+                    order_id=pk,
+                    key=data["key"],
+                    state=state,
+                    rows=rows.cleaned_data,
+                    complete=data["complete"],
+                    payment=payment,
+                )
+            except signing.BadSignature:
+                form.add_error(
+                    None,
+                    "Esta revisão expirou ou foi alterada. Abra novamente pelo pedido.",
+                )
+            except ValidationError as exc:
+                form.add_error(None, exc.messages)
+            else:
+                messages.success(
+                    request,
+                    "Dados confirmados. Produção, entrega e recebimento foram registrados conforme sua revisão.",
+                )
+                return redirect("production:detail", pk=pk)
+    return render(
+        request,
+        "production/completion.html",
+        {"order": order, "form": form, "rows": rows, "item_rows": zip(items, rows)},
+    )

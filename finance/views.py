@@ -52,7 +52,27 @@ def payment(request, pk):
     version = get_object_or_404(
         QuoteVersion, pk=pk, quote__owner=request.user, status="approved"
     )
-    form = PaymentForm(request.POST or None)
+    allocations = version.allocations.select_related("payment").prefetch_related(
+        "refunds"
+    )
+    received = sum(
+        (
+            row.amount
+            - sum((refund.amount for refund in row.refunds.all()), Decimal(0))
+            for row in allocations
+        ),
+        Decimal(0),
+    )
+    order = Order.objects.filter(current_version=version, owner=request.user).first()
+    balance = order.balance if order else max(Decimal(0), version.total - received)
+    latest = allocations.order_by("-payment__date", "-payment__created_at").first()
+    form = PaymentForm(
+        request.POST if request.method == "POST" else None,
+        initial={
+            "amount": balance or None,
+            "method": latest.payment.method if latest else "pix",
+        },
+    )
     if request.method == "POST" and form.is_valid():
         try:
             services.record_payment(
@@ -73,7 +93,8 @@ def payment(request, pk):
         {
             "form": form,
             "heading": "Registrar recebimento manual",
-            "description": "Não processa Pix/cartão nem acessa conta bancária. Registre somente dinheiro já recebido.",
+            "description": f"Saldo a receber: R$ {balance:.2f}. O saldo, a data de hoje e o meio de pagamento vêm sugeridos. Confira ou edite e confirme somente dinheiro já recebido.",
+            "submit_label": "Confirmar recebimento",
         },
     )
 
