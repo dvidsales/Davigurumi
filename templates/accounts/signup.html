@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}Criar conta · Davigurumi{% endblock %}
+{% block content %}
+<section class="auth-intro"><span class="eyebrow">COMECE COM O QUE VOCÊ JÁ TEM</span><h1>Uma criação de<br>cada vez.</h1><p>Seu espaço começa vazio. Cadastre materiais e experimente a calculadora, sem precisar informar empresa ou endereço.</p><p class="intro-note">Esta versão está em desenvolvimento.<br>Use dados de teste por enquanto.</p></section>
+<section class="card auth-card"><h2>Criar minha conta</h2><form method="post">{% csrf_token %}{% include 'form_fields.html' %}<button class="button full" type="submit">Começar</button></form><p class="auth-footer">Já tem conta? <a href="{% url 'login' %}">Entrar</a></p></section>
+{% endblock %}
