@@ -72,9 +72,19 @@ def replenishment(owner):
     required = defaultdict(Decimal)
     orders = Order.objects.filter(
         owner=owner, status__in=["waiting", "in_progress", "paused"]
-    ).prefetch_related("items__consumptions__movement")
+    ).prefetch_related("items__consumptions__movement__compensations")
+    reserved_totals = {
+        (str(row["reference"]), str(row["layer__material_id"])): row["total"]
+        for row in StockReservation.objects.filter(
+            layer__material__owner=owner, remaining__gt=0
+        )
+        .values("reference", "layer__material_id")
+        .annotate(total=Sum("remaining"))
+    }
     for order in orders:
-        for item in order.items.filter(retired=False):
+        for item in order.items.all():
+            if item.retired:
+                continue
             requirements = defaultdict(Decimal)
             for line in item.snapshot.get("materials", []):
                 requirements[line["material"]] += Decimal(line["quantity"])
@@ -87,11 +97,7 @@ def replenishment(owner):
                     ),
                     Decimal(0),
                 )
-                reserved = StockReservation.objects.filter(
-                    reference=item.pk,
-                    layer__material_id=material_id,
-                    layer__material__owner=owner,
-                ).aggregate(total=Sum("remaining"))["total"] or Decimal(0)
+                reserved = reserved_totals.get((str(item.pk), material_id), Decimal(0))
                 required[material_id] += max(Decimal(0), quantity - consumed - reserved)
     rows = []
     for material in Material.objects.filter(

@@ -44,6 +44,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "accounts.privacy.ErasureGateMiddleware",
     "accounts.demo.DemoMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -190,3 +191,25 @@ LOGGING = {
         },
     },
 }
+
+# Mount independently from database/media backups in production. Do not rotate
+# this key without migrating all signed tombstones.
+PRIVACY_LEDGER_DIR = os.getenv(
+    "DJANGO_PRIVACY_LEDGER_DIR", str(BASE_DIR / ".local" / "privacy-ledger")
+)
+PRIVACY_LEDGER_REQUIRED = not DEBUG or bool(os.getenv("DJANGO_PRIVACY_LEDGER_DIR"))
+PRIVACY_LEDGER_KEY = os.getenv("DJANGO_PRIVACY_LEDGER_KEY", SECRET_KEY if DEBUG else "")
+
+ACCOUNT_RECORD_LIMITS = {
+    "materials.material": 1000,
+    "projects.project": 500,
+    "sales.client": 1000,
+    "sales.quote": 500,
+    "purchasing.supplier": 500,
+    "purchasing.purchase": 1000,
+    "production.order": 500,
+    "materials.stockoperation": 5000,
+    "projects.projectrevision": 5000,
+    "sales.quoteversion": 5000,
+}
+ACCOUNT_STORAGE_LIMIT = 50 * 1024 * 1024

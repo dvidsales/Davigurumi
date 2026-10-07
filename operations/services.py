@@ -38,6 +38,26 @@ def deliver_outbox(limit=50):
                 break
             row.attempts += 1
             try:
+                from accounts.privacy import assert_not_erased
+                from django.core.exceptions import ValidationError
+
+                try:
+                    assert_not_erased(row.notification.owner_id)
+                except (ValidationError, OSError):
+                    row.status = "imported"
+                    row.last_error = "PrivacyBlocked"
+                    row.save()
+                    continue
+                if (
+                    not row.notification.owner.is_active
+                    or not NotificationPreference.objects.filter(
+                        owner=row.notification.owner, email_enabled=True
+                    ).exists()
+                ):
+                    row.status = "imported"
+                    row.last_error = "ConsentRevoked"
+                    row.save()
+                    continue
                 if (
                     settings.EMAIL_BACKEND
                     == "django.core.mail.backends.dummy.EmailBackend"
@@ -45,7 +65,7 @@ def deliver_outbox(limit=50):
                     raise OSError("O envio de e-mail está desativado.")
                 delivered = send_mail(
                     "Atualização no Davigurumi",
-                    row.notification.message,
+                    "Há uma atualização na sua conta Davigurumi. Entre na aplicação para consultar os detalhes.",
                     settings.DEFAULT_FROM_EMAIL,
                     [row.notification.owner.email],
                     fail_silently=False,

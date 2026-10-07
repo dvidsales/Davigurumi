@@ -28,9 +28,9 @@ Esta aplicação continua em desenvolvimento e **não deve ser aberta ao públic
 
 ## Limites atuais e itens antes de abertura
 
-1. **Exclusão/anonimização e backups:** suspensão não elimina dados. Definir retenção por categoria, anonimização de textos/imagens/snapshots, tombstones e expurgo/restauração de backups conforme política aprovada. Ver [PRIVACIDADE](docs/PRIVACIDADE.md).
+1. **Retenção e backups:** exclusão integral administrativa, tombstones assinados externos, bloqueio/reaplicação após restauração e expiração de cópias locais implementados nesta continuidade local. Não executados em dados reais. Política/prazos, expurgo em provedores e anonimização seletiva ainda dependem de definição. Ver [EXCLUSAO_RETENCAO](docs/EXCLUSAO_RETENCAO.md).
 2. **Infraestrutura:** verificar HTTPS/proxy, identidade do servidor PostgreSQL e TLS, usuário de banco com privilégio mínimo, permissões/criptografia do armazenamento, logs externos e destino de backup independente. A senha local é apenas do container de desenvolvimento.
-3. **Contas e abuso:** MFA/verificação de e-mail não estão implementados; cadastro permanece fechado por padrão em produção. Limites por IP não substituem controle de abuso distribuído, quotas por conta, proteção de borda ou monitoramento. Proxy/IP compartilhado deve ser definido conscientemente.
+3. **Contas e abuso:** MFA/verificação de e-mail não estão implementados; cadastro permanece fechado por padrão em produção. Cotas por conta incluem categorias de registros e 50 MB de imagens/PDFs, com lock e proteção na importação. Limites por IP e cotas não substituem controle de abuso distribuído, proteção de borda ou monitoramento. Proxy/IP compartilhado deve ser definido conscientemente.
 4. **Autorização:** a aplicação filtra por proprietário; triggers são defesa adicional, não RLS nem autorização para quem possuir credenciais diretas do banco. A assinatura do pacote não criptografa dados e depende da proteção/rotação da chave original.
 5. **Portal:** link é uma credencial de posse, não verificação da identidade do cliente. Revogação não recolhe arquivos já baixados. Logs do proxy precisam de redação própria.
 6. **Validação adicional:** revisão independente, cargas/cotas, navegadores/dispositivos reais e acessibilidade. Push não foi habilitado/implementado nesta revisão; nova integração exige revisar endpoints e evitar SSRF e conteúdo pessoal em tela bloqueada.
@@ -46,3 +46,11 @@ bandit -r accounts config materials purchasing projects sales production finance
 ```
 
 Ferramentas de auditoria são separadas das dependências da aplicação; a CI instala versões fixadas. Para evidências no navegador, usar exclusivamente base descartável conforme VALIDACAO. Comunicar incidentes diretamente ao responsável pelo repositório por canal privado; não publicar dados reais, pacotes, tokens ou credenciais em issues.
+
+## Continuidade local
+
+Controle de exclusão sem endpoint público: prévia, suspensão prévia, registro externo assinado/fsync, manutenção transacional com locks e guardas reativados, remoção de arquivos após commit e reaplicação. Processo web deve ter somente leitura do registro e um usuário de banco restrito. A manutenção requer permissões próprias; não conceder ALTER TABLE ao runtime por causa do comando. O registro/key nunca podem ser substituídos pela versão de um backup antigo.
+
+Importação recusa origem/destino excluídos; sessões e portal verificam tombstones e falham fechados em produção sem configuração. Envios pendentes respeitam exclusão/suspensão/opt-out; corpo de e-mail não inclui dados internos. Cotas também protegem cópias do demo/importações. Foco de teclado, contraste e tabelas roláveis foram revistos; emulação e auditoria automática não substituem aparelhos/leitor de tela reais.
+
+`check_readiness` é uma prévia local dos requisitos de produção, sem deploy; `--strict` falha quando incompletos. O cloud continua corretamente identificado como desenvolvimento, sem requisitos de produção concluídos. Alterações desta continuidade são locais, sem push/novo PR.

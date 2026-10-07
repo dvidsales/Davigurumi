@@ -71,3 +71,5 @@ A [especificação original extraída](docs/ESPECIFICACAO_ORIGINAL.txt) é refer
 `manage.py` usa desenvolvimento local por padrão. A entrada WSGI exige configuração explícita de produção: DEBUG desativado, chave própria forte e hosts concretos. Cadastro público fica fechado por padrão em produção; e-mail não configurado usa backend sem envio, e console de recuperação é rejeitado. Isso não representa autorização para publicar o app.
 
 Senhas novas exigem 12 caracteres. Em **Segurança da conta**, pode-se alterar senha, revogar todos os links e suspender acesso, incluindo demonstração. Suspensão preserva o histórico e não substitui eliminação/anonimização.
+
+A continuidade local acrescenta exclusão administrativa com prévia e tombstones externos, reaplicação após restauração, expiração de backups locais e cotas por conta. Procedimentos e limites em [EXCLUSAO_RETENCAO](docs/EXCLUSAO_RETENCAO.md). O roteiro para computador/celular/tablet está em [TESTES_DISPOSITIVOS](docs/TESTES_DISPOSITIVOS.md). Essas alterações não foram publicadas no GitHub.

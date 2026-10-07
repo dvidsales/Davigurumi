@@ -28,6 +28,10 @@ def create_project(
 ):
     get_user_model().objects.select_for_update().get(pk=owner.pk)
     calculate_price(cost=Decimal(0), mode=mode, percentage=percentage, fee=fee)
+    from accounts.quotas import ensure_capacity
+
+    ensure_capacity(owner, "projects.project")
+    ensure_capacity(owner, "projects.projectrevision")
     project = Project.objects.create(owner=owner, name=name, notes=notes)
     revision = ProjectRevision(
         project=project,
@@ -52,7 +56,12 @@ def create_project(
 
 
 def clone_revision(project):
+    from accounts.quotas import ensure_capacity
+
+    ensure_capacity(project.owner, "projects.projectrevision")
     current = project.current_revision
+    if current.materials.count() > 100:
+        raise ValidationError("Limite de 100 materiais por ficha.")
     values = {
         field: getattr(current, field)
         for field in (
@@ -107,6 +116,8 @@ def add_material(
     material = get_object_or_404(
         Material, pk=material_id, owner=owner, is_archived=False
     )
+    if project.current_revision.materials.count() >= 100:
+        raise ValidationError("Limite de 100 materiais por ficha.")
     base, snapshot = to_base(material, quantity, unit)
     revision, _ = clone_revision(project)
     line = ProjectMaterial(

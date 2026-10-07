@@ -12,8 +12,8 @@ E-mail/nome da pessoa artesã, cadastro/contato do cliente, textos internos/livr
 
 ## Pendências que impedem abertura pública
 
-- Há suspensão com senha e revogação de links, mas não exclusão/anonimização completa de conta, snapshots e arquivos. Proteções de imutabilidade financeira/comercial exigem tratamento deliberado conforme retenção definida; não prometer que dados pessoais serão preservados para sempre.
-- Não há tombstones de exclusão aplicados na restauração nem ciclo de expurgo de backups. Um backup antigo pode reintroduzir dados que deveriam ter sido eliminados.
+- Há suspensão e exclusão integral administrativa, incluindo snapshots e arquivos, conforme EXCLUSAO_RETENCAO. Política de retenção ainda deve ser aprovada; não executar exclusão quando houver obrigação de conservar dados. Anonimização seletiva não implementada.
+- Tombstones externos e reaplicação em restauração estão implementados, assim como expiração de cópias locais. Exigem registro atual/chave independentes e procedimento administrativo; snapshots/versionamento/logs de provedores externos precisam de configuração própria.
 - Ausência de política publicada, canal de privacidade/resposta a incidentes e verificação de acesso operacional por fornecedor.
 - Logs do proxy/host, backups independentes, TLS, permissões do armazenamento e segredo de produção precisam ser configurados/verificados no ambiente escolhido.
 - Exportação/importação mantém histórico pessoal; pacote contém informações sensíveis e precisa de armazenamento/controlos de acesso adequados. A assinatura valida autenticidade na mesma chave, não criptografa o conteúdo.
@@ -25,3 +25,5 @@ A revogação de link impede novos acessos, mas não recolhe PDFs/imagens já ba
 Suspender novos acessos ao ambiente afetado, preservar evidências mínimas em armazenamento restrito, rotacionar segredo/tokens e revisar impacto em sessões, e-mail e arquivos. Restaurar apenas em base isolada e reconciliar estoque/financeiro; não colocar a restauração em serviço antes de reaplicar eventuais exclusões/tombstones. Responsáveis, comunicação e prazos legais ainda precisam de definição.
 
 A revisão desta continuidade está em [SECURITY](../SECURITY.md), incluindo limitações do cadastro, abuso distribuído e infraestrutura. Cadastro público fica fechado por padrão fora do desenvolvimento. Suspensão alcança o demo e bloqueia o portal sem destruir o histórico.
+
+Procedimento técnico: [EXCLUSAO_RETENCAO](EXCLUSAO_RETENCAO.md). Testes não eliminaram dados pessoais ou backups existentes.

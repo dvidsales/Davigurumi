@@ -72,6 +72,9 @@ def canonical(payload):
 
 @transaction.atomic
 def export_archive(owner):
+    from accounts.privacy import assert_not_erased
+
+    assert_not_erased(owner.pk)
     get_user_model().objects.select_for_update().get(pk=owner.pk)
     records = []
     files = {}
@@ -221,6 +224,13 @@ def validate_archive(package):
 @transaction.atomic
 def import_archive(*, owner, package):
     payload = validate_archive(package)
+    from accounts.privacy import assert_not_erased
+
+    try:
+        assert_not_erased(payload["source_owner"])
+        assert_not_erased(owner.pk)
+    except (KeyError, ValueError, TypeError) as exc:
+        raise ValidationError("Identidade de origem inválida.") from exc
     get_user_model().objects.select_for_update().get(pk=owner.pk)
     for label, scope in SCOPES:
         if label == "operations.notificationpreference":
@@ -235,6 +245,24 @@ def import_archive(*, owner, package):
             raise ValidationError(
                 "Há colisão de IDs nesta instalação. Use uma base vazia para preservar as relações originais."
             )
+    from collections import Counter
+    from accounts.quotas import ensure_capacity, ensure_storage
+
+    counts = Counter(record["model"] for record in records)
+    for label, count in counts.items():
+        if label in settings.ACCOUNT_RECORD_LIMITS:
+            ensure_capacity(owner, label, additional=count)
+    storage_bytes = sum(
+        int(record["fields"]["size"])
+        for record in records
+        if record["model"] == "sales.fileasset"
+    )
+    storage_bytes += sum(
+        len(base64.b64decode(record["fields"].get("pdf", "")))
+        for record in records
+        if record["model"] == "sales.quoteversion"
+    )
+    ensure_storage(owner, storage_bytes)
     staged = {}
     created_paths = []
     root = Path(settings.MEDIA_ROOT).resolve()

@@ -36,6 +36,9 @@ def create_material(*, form, owner):
     existing = existing_result()
     if existing:
         return existing
+    from accounts.quotas import ensure_capacity
+
+    ensure_capacity(owner, "materials.material")
     material = form.save(commit=False)
     material.owner = owner
     material.request_key = form.cleaned_data["request_key"]

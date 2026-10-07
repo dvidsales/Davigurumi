@@ -81,6 +81,10 @@ def begin_operation(owner, key, action, payload):
                 "Esta chave já foi usada em outra operação. Atualize o formulário."
             )
         return existing, True
+    from accounts.quotas import ensure_capacity
+
+    if action != "account_security":
+        ensure_capacity(owner, "materials.stockoperation")
     return (
         StockOperation.objects.create(
             owner=owner, key=key, action=action, payload_hash=digest

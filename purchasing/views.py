@@ -35,10 +35,16 @@ def create(request):
     if request.method == "POST" and form.is_valid():
         purchase = form.save(commit=False)
         purchase.owner = request.user
-        with transaction.atomic():
-            get_user_model().objects.select_for_update().get(pk=request.user.pk)
-            purchase.save()
-        return redirect("purchasing:detail", pk=purchase.pk)
+        try:
+            with transaction.atomic():
+                from accounts.quotas import ensure_capacity
+
+                ensure_capacity(request.user, "purchasing.purchase")
+                purchase.save()
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            return redirect("purchasing:detail", pk=purchase.pk)
     return render(
         request,
         "generic_form.html",
@@ -57,10 +63,16 @@ def suppliers(request):
     if request.method == "POST" and form.is_valid():
         supplier = form.save(commit=False)
         supplier.owner = request.user
-        with transaction.atomic():
-            get_user_model().objects.select_for_update().get(pk=request.user.pk)
-            supplier.save()
-        return redirect("purchasing:suppliers")
+        try:
+            with transaction.atomic():
+                from accounts.quotas import ensure_capacity
+
+                ensure_capacity(request.user, "purchasing.supplier")
+                supplier.save()
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            return redirect("purchasing:suppliers")
     return render(
         request,
         "purchasing/suppliers.html",

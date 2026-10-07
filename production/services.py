@@ -50,6 +50,9 @@ def create_order(*, owner, version_id):
         raise ValidationError(
             "Esta aprovação pertence a um orçamento já convertido. Aplique o aditivo ao pedido existente."
         )
+    from accounts.quotas import ensure_capacity
+
+    ensure_capacity(owner, "production.order")
     order = Order.objects.create(
         owner=owner, approved_version=version, current_version=version
     )

@@ -48,7 +48,7 @@ class Order(models.Model):
     @property
     def net_received(self):
         total = Decimal(0)
-        for allocation in self.allocations.select_related("payment"):
+        for allocation in self.allocations.all():
             total += allocation.amount - sum(
                 (refund.amount for refund in allocation.refunds.all()), Decimal(0)
             )

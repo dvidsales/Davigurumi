@@ -3,3 +3,6 @@
 .quote-image{max-width:100%;max-height:340px;object-fit:contain}figure{margin:20px 0}button:disabled{opacity:.6;cursor:not-allowed}
 .sidebar{overflow-y:auto}.workspace,.dashboard-grid>*,.metrics>*{min-width:0}.panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px;margin-bottom:24px}.panel form>p>label{display:block;font-weight:600}.panel input:not([type=checkbox]),.panel select,.panel textarea{max-width:100%;width:100%;padding:10px;border:1px solid #aabbb1;border-radius:8px;min-height:44px}.panel input[type=checkbox]{min-width:22px;min-height:22px}.table-wrap{overflow-x:auto}.sidebar .brand{flex-shrink:0}.sidebar-bottom{flex-shrink:0}
 .button{white-space:normal;max-width:100%;overflow-wrap:anywhere}.form-actions form{max-width:100%}summary{cursor:pointer;min-height:44px;font-weight:600}details[open] summary{margin-bottom:18px}
+
+.metric.accent p{color:var(--primary)}
+:focus-visible{outline:3px solid #9b5800;outline-offset:3px}

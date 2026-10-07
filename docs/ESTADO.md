@@ -34,3 +34,13 @@ Servidor/processos não são garantidos após restauração do ambiente. Inicie 
 GitHub: PRs #1–#3 incorporados; novo trabalho está na branch de segurança. Não imprimir tokens ou pedir credenciais pelo chat.
 
 Revisão detalhada em [SECURITY.md](../SECURITY.md): isolamento de 45 rotas privadas, limites de uploads/requisições/exportações, suspensão e revogação, senha e configuração de produção restritiva. Novos fluxos incluem despesas reais/reversões, recuperação de estoque, arquivamento, aditivos reconciliados, calendário, comparação de versões, referências de custo e relatórios de movimentos. Ainda faltam push, retenção/anonimização/tombstones, dispositivos reais e avaliação independente.
+
+## Continuidade local essencial — sem push
+
+O usuário pediu priorizar pendências essenciais e deixar notificações para o final, sem necessidade de publicação no GitHub. A continuidade após `55a40b0` é local: não fazer push automático nem alterar o PR #4 com essas mudanças.
+
+Exclusão integral administrativa com prévia, tombstones externos assinados, bloqueio de sessão/portal/importação e reaplicação na restauração; expiração de backups reconhecidos com simulação por padrão. Nenhum `--apply` foi executado em dados reais/backups existentes. Tests usaram apenas bancos de teste e diretórios temporários. Cotas por conta, orçamento de imagens/PDFs, consultas do painel e WCAG/foco/tabelas corrigidos. Leia EXCLUSAO_RETENCAO antes de qualquer uso administrativo.
+
+160 testes PostgreSQL passaram; SQLite 155 passaram/5 exclusivos ignorados. Chromium: 31 telas de 360 px e telas principais em 768/1024, zero violações WCAG automáticas; carga sintética de 48 leituras/4 simultâneas, zero falhas. Auditorias sem vulnerabilidades conhecidas/achados médios ou altos. Nenhuma migração nova nesta continuidade.
+
+Base sintética adicional `davigurumi_browser_essentials_20261007`, arquivos `.local/browser_essentials_files`, servidor local de teste 127.0.0.1:8104 (reiniciar após restauração). Roteiro de homologação em TESTES_DISPOSITIVOS: computador e celular; tablet se fizer parte da rotina. `check_readiness` retorna false neste ambiente de desenvolvimento; não é produção nem autoriza abertura pública.

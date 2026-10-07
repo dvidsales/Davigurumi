@@ -27,6 +27,10 @@ def create_quote(*, owner, client_id=None, terms="", delivery_date=None, valid_d
     number = (
         Quote.objects.filter(owner=owner).aggregate(number=Max("number"))["number"] or 0
     ) + 1
+    from accounts.quotas import ensure_capacity
+
+    ensure_capacity(owner, "sales.quote")
+    ensure_capacity(owner, "sales.quoteversion")
     quote = Quote.objects.create(owner=owner, client=client, number=number)
     QuoteVersion.objects.create(
         quote=quote,
@@ -109,6 +113,9 @@ def new_version(*, owner, quote_id):
     latest = quote.versions.order_by("-number").first()
     if latest.published_at is None:
         return latest
+    from accounts.quotas import ensure_capacity
+
+    ensure_capacity(owner, "sales.quoteversion")
     version = QuoteVersion.objects.create(
         quote=quote,
         number=latest.number + 1,
@@ -312,6 +319,9 @@ def publish(*, owner, version_id, confirm_limitations=False, confirm_below_cost=
         ).encode()
     ).hexdigest()
     version.pdf = generate_pdf(public, image_bytes=image_bytes)
+    from accounts.quotas import ensure_storage
+
+    ensure_storage(owner, len(version.pdf))
     version.published_at = now
     version.status = "sent"
     version.save()
@@ -348,6 +358,12 @@ def get_token(raw):
         revoked_at__isnull=True,
         version__quote__owner__is_active=True,
     )
+    from accounts.privacy import assert_not_erased
+
+    try:
+        assert_not_erased(token.version.quote.owner_id)
+    except (ValidationError, OSError, ValueError):
+        raise Http404
     if token.expires_at <= timezone.now() or token.version.status == "revoked":
         raise Http404
     return token
