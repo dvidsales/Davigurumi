@@ -46,7 +46,7 @@ Primeira prova de fundação também preservou material 508 e hash de senha em b
 
 ## Limites das evidências
 
-SMTP testado com backend em memória/falha simulada, sem e-mail externo real. O histórico de CI PostgreSQL do PR #2 passou. PRs #1–#3 incorporados; consulte os checks do novo PR de segurança para execução remota. Não verificados: hospedagem, cobrança/cotas de fornecedor, carga de produção, dispositivos Safari/Android, push, leitor de tela, política legal/exclusão/tombstones e recuperação com perdas reais de infraestrutura.
+SMTP testado com backend em memória/falha simulada, sem e-mail externo real. O histórico de CI PostgreSQL do PR #2 passou. PRs #1–#3 incorporados; consulte os checks do [PR #4](https://github.com/dvidsales/Davigurumi/pull/4) para execução remota. Não verificados: hospedagem, cobrança/cotas de fornecedor, carga de produção, dispositivos Safari/Android, push, leitor de tela, política legal/exclusão/tombstones e recuperação com perdas reais de infraestrutura.
 
 ## Revisão de segurança e novos fluxos
 
