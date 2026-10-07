@@ -1,3 +1,4 @@
+import uuid
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -5,6 +6,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 from .forms import MaterialForm, StockActionForm, ConversionForm, ReservationActionForm
 from .models import Material, StockReservation
 from . import stock
@@ -18,6 +20,12 @@ def index(request):
     materials = Material.objects.filter(owner=request.user).prefetch_related(
         "movements", "layers"
     )
+    state = request.GET.get("state", "active")
+    if state == "archived":
+        materials = materials.filter(is_archived=True)
+    elif state != "all":
+        state = "active"
+        materials = materials.filter(is_archived=False)
     if query:
         materials = materials.filter(
             Q(name__icontains=query)
@@ -30,6 +38,7 @@ def index(request):
         {
             "page_obj": Paginator(materials, 20).get_page(request.GET.get("page")),
             "query": query,
+            "state": state,
         },
     )
 
@@ -65,6 +74,7 @@ def detail(request, pk):
         "materials/detail.html",
         {
             "material": material,
+            "archive_key": uuid.uuid4(),
             "reservations": StockReservation.objects.filter(
                 layer__material=material, remaining__gt=0
             ).select_related("layer"),
@@ -208,7 +218,8 @@ def edit(request, pk):
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             get_user_model().objects.select_for_update().get(pk=request.user.pk)
-            form.save()
+            edited = form.save(commit=False)
+            edited.save(update_fields=list(form.Meta.fields))
         return redirect("materials:detail", pk=pk)
     return render(
         request,
@@ -217,5 +228,67 @@ def edit(request, pk):
             "form": form,
             "heading": "Editar cadastro do material",
             "description": "Não altera o histórico nem os custos de entradas anteriores.",
+        },
+    )
+
+
+@never_cache
+@login_required
+@require_POST
+def archive(request, pk):
+    from .services import archive_material
+
+    get_object_or_404(Material, pk=pk, owner=request.user)
+    try:
+        action = request.POST.get("action")
+        if action not in {"archive", "restore"}:
+            raise ValidationError("Operação inválida.")
+        archive_material(
+            owner=request.user,
+            material_id=pk,
+            archived=action == "archive",
+            reason=request.POST.get("reason", ""),
+            key=uuid.UUID(request.POST.get("key", "")),
+        )
+    except (ValidationError, ValueError) as exc:
+        messages.error(
+            request,
+            (
+                " ".join(exc.messages)
+                if isinstance(exc, ValidationError)
+                else "Formulário inválido. Atualize a página."
+            ),
+        )
+    return redirect("materials:detail", pk=pk)
+
+
+@never_cache
+@login_required
+def compensation(request, pk):
+    from .models import StockMovement
+    from .forms import CompensationForm
+
+    movement = get_object_or_404(
+        StockMovement.objects.select_related("material"),
+        pk=pk,
+        material__owner=request.user,
+    )
+    form = CompensationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            stock.compensate_movement(
+                owner=request.user, movement_id=pk, **form.cleaned_data
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            return redirect("materials:detail", pk=movement.material_id)
+    return render(
+        request,
+        "generic_form.html",
+        {
+            "form": form,
+            "heading": "Compensar movimento de estoque",
+            "description": f"Origem: {movement.quantity} {movement.material.unit}. A recuperação devolve sobra física com custo histórico; a devolução de entrada exige saldo livre da camada original. Reservas não são refeitas e o original permanece no histórico. Consumos de pedido são tratados na tela do pedido.",
         },
     )

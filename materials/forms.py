@@ -161,3 +161,14 @@ class MaterialEditForm(MaterialForm):
         self.fields["unit"].help_text = (
             "A unidade base é preservada para manter movimentos, conversões e fichas consistentes."
         )
+
+
+class CompensationForm(forms.Form):
+    key = forms.UUIDField(widget=forms.HiddenInput, initial=uuid.uuid4)
+    quantity = forms.DecimalField(
+        label="Quantidade física a recuperar/devolver na unidade base",
+        min_value=Decimal(".000001"),
+        max_digits=12,
+        decimal_places=6,
+    )
+    reason = forms.CharField(label="Motivo da compensação", max_length=100)

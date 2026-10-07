@@ -2,17 +2,18 @@
 
 A autorização atual permite continuar o desenvolvimento sem aguardar teste manual. A referência de produto não autoriza deploy/serviços pagos. Os módulos funcionais estão descritos no README; as pendências abaixo não devem desaparecer do escopo.
 
-## Próximos itens de implementação
+## Implementado nesta continuidade
 
-- Arquivamento de materiais e atributos técnicos adicionais por categoria; composição, espessura, agulha recomendada e estoque mínimo disponível já estão implementados.
-- Devoluções/retificações de recebimento com vínculos compensatórios e reversão de consumo no fluxo do pedido.
-- Conciliação de aditivo com remoção de item ou alteração de materiais já comprometidos; hoje operações inseguras são rejeitadas.
-- Duração padrão, planejamento/calendário, seleção da política de referência por ficha e custos adicionais efetivos; indicadores de lucro precisam dessa completude.
-- Relatórios detalhados por material e visualização de diferenças entre versões; pedidos já têm filtros por cliente/projeto/produção e exportação CSV/XLSX.
-- Importação/exportação de templates adicionais; pacote completo tem limite 10000 registros/50 MB, assinatura ligada à chave original e não faz merge entre bases existentes.
-- Push Web Push com explicação/opt-in, assinatura e entrega efetiva; validação da PWA em Safari/Android, instalação e permissões em dispositivos reais.
-- Eliminação/anonimização, retenção por categoria e tombstones com testes de restauração, após política definida. Revisão técnica em PRIVACIDADE.
-- Automatizar evidências restantes T01–T26, testes de uploads grandes, cargas/cotas e acessibilidade com leitor de tela. Testes locais não equivalem a homologação do usuário.
+Arquivamento/reativação de materiais; compensações vinculadas de entradas, consumo e perdas; sobras pelo pedido e custos líquidos; despesas reais e reversões; aditivos com liberação de reservas, retirada de itens ainda não produzidos e motivo para conciliar consumo; calendário; referência de custo por ficha; comparação de versões; relatório por material e modelos CSV/XLSX com metadados. Segurança revisada e reforçada conforme SECURITY.
+
+## Pendências de produto e validação
+
+- Atributos adicionais específicos por categoria e preferências globais de duração. Fichas já têm tempo estimado e política de custo; calendário mostra horas estimadas/registradas.
+- Crédito/reembolso do fornecedor e conciliações mais complexas de peças já produzidas/entregues. Compensação física não reabre compra nem registra dinheiro automaticamente. Itens já produzidos não são removidos nem têm composição substituída silenciosamente.
+- Templates de projetos/outros tipos além dos materiais; importação mesclada entre bases existentes segue bloqueada para preservar IDs/histórico. Pacote completo limita 10000 registros/50 MB.
+- Push Web Push com opt-in e revisão de endpoints/SSRF/privacidade; instalação e permissões em Safari/Android reais.
+- Eliminação/anonimização, retenção por categoria e tombstones/restauração após política definida. Suspensão implementada impede acesso, preservando dados.
+- Revisão independente de segurança, limites/cotas por conta, abuso distribuído, testes de carga, uploads grandes e acessibilidade. Não declarar T01–T26 nem homologação do usuário concluídos.
 
 ## Dependências operacionais
 

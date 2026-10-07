@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from materials.models import StockReservation, StockMovement
@@ -78,6 +78,8 @@ def create_order(*, owner, version_id):
 
 @transaction.atomic
 def reserve_order(*, owner, order_id, key):
+    from materials.stock import net_consumed
+
     op, repeated = begin_operation(owner, key, "order_reserve", {"order": order_id})
     if repeated:
         return op.result
@@ -87,7 +89,7 @@ def reserve_order(*, owner, order_id, key):
     if order.status in {"completed", "cancelled"}:
         raise ValidationError("Pedido encerrado não pode receber reservas.")
     result = []
-    for item in order.items.all():
+    for item in order.items.filter(retired=False):
         requirements = {}
         for line in item.snapshot["materials"]:
             material_id = line["material"]
@@ -97,7 +99,7 @@ def reserve_order(*, owner, order_id, key):
         for material_id, needed in sorted(requirements.items()):
             consumed = sum(
                 (
-                    -row.movement.quantity
+                    net_consumed(row.movement)
                     for row in item.consumptions.select_related("movement")
                     if str(row.movement.material_id) == material_id
                 ),
@@ -143,7 +145,10 @@ def consume_item(*, owner, item_id, material_id, quantity, key, reservation_id=N
     if repeated:
         return op.result
     item = get_object_or_404(
-        OrderItem.objects.select_for_update(), pk=item_id, order__owner=owner
+        OrderItem.objects.select_for_update(),
+        pk=item_id,
+        order__owner=owner,
+        retired=False,
     )
     if item.order.status in {"completed", "cancelled"}:
         raise ValidationError("Pedido encerrado não pode consumir novos materiais.")
@@ -179,7 +184,7 @@ def consume_item(*, owner, item_id, material_id, quantity, key, reservation_id=N
 @transaction.atomic
 def start_session(*, owner, item_id):
     get_user_model().objects.select_for_update().get(pk=owner.pk)
-    item = get_object_or_404(OrderItem, pk=item_id, order__owner=owner)
+    item = get_object_or_404(OrderItem, pk=item_id, order__owner=owner, retired=False)
     if item.order.status in {"completed", "cancelled"}:
         raise ValidationError("O pedido está encerrado.")
     current = ProductionSession.objects.filter(
@@ -221,7 +226,7 @@ def stop_session(*, owner, session_id):
 @transaction.atomic
 def manual_time(*, owner, item_id, seconds, ended_at=None):
     get_user_model().objects.select_for_update().get(pk=owner.pk)
-    item = get_object_or_404(OrderItem, pk=item_id, order__owner=owner)
+    item = get_object_or_404(OrderItem, pk=item_id, order__owner=owner, retired=False)
     if item.order.status == "cancelled":
         raise ValidationError("Pedido cancelado não recebe nova sessão de tempo.")
     if not isinstance(seconds, int) or seconds < 0 or seconds > 86400 * 30:
@@ -274,7 +279,10 @@ def correct_time(*, owner, session_id, seconds, reason):
 def record_produced(*, owner, item_id, quantity):
     get_user_model().objects.select_for_update().get(pk=owner.pk)
     item = get_object_or_404(
-        OrderItem.objects.select_for_update(), pk=item_id, order__owner=owner
+        OrderItem.objects.select_for_update(),
+        pk=item_id,
+        order__owner=owner,
+        retired=False,
     )
     if item.order.status in {"completed", "cancelled"}:
         raise ValidationError("Pedido encerrado não recebe produção.")
@@ -300,7 +308,10 @@ def deliver_item(*, owner, item_id, quantity, key, notes=""):
     if repeated:
         return op.result
     item = get_object_or_404(
-        OrderItem.objects.select_for_update(), pk=item_id, order__owner=owner
+        OrderItem.objects.select_for_update(),
+        pk=item_id,
+        order__owner=owner,
+        retired=False,
     )
     if (
         item.order.status == "cancelled"
@@ -317,7 +328,7 @@ def deliver_item(*, owner, item_id, quantity, key, notes=""):
         item=item, quantity=quantity, notes=notes[:200]
     )
     order = item.order
-    if all(row.delivered == row.quantity for row in order.items.all()):
+    if all(row.delivered == row.quantity for row in order.items.filter(retired=False)):
         order.delivery_status = "delivered"
         order.save(update_fields=["delivery_status"])
     return finish(op, {"event": event.pk, "delivered": item.delivered})
@@ -342,7 +353,7 @@ def close_order(*, owner, order_id, status, reason=""):
         ).exists():
             raise ValidationError("Pause a sessão ativa antes de encerrar o pedido.")
         if status == "completed" and any(
-            item.produced != item.quantity for item in order.items.all()
+            item.produced != item.quantity for item in order.items.filter(retired=False)
         ):
             raise ValidationError(
                 "Registre as quantidades produzidas antes de concluir."
@@ -368,7 +379,11 @@ def close_order(*, owner, order_id, status, reason=""):
 
 
 @transaction.atomic
-def apply_amendment(*, owner, order_id, version_id):
+def apply_amendment(*, owner, order_id, version_id, reconciliation_reason=""):
+    from materials.stock import net_consumed
+
+    if len(reconciliation_reason) > 200:
+        raise ValidationError("O motivo de conciliação deve ter até 200 caracteres.")
     get_user_model().objects.select_for_update().get(pk=owner.pk)
     order = get_object_or_404(
         Order.objects.select_for_update(), pk=order_id, owner=owner
@@ -394,35 +409,77 @@ def apply_amendment(*, owner, order_id, version_id):
         raise ValidationError(
             "O aditivo precisa aprovar a condição comercial vigente deste pedido."
         )
+    if order.status in {"completed", "cancelled"}:
+        raise ValidationError("Reabra o pedido com motivo antes de aplicar um aditivo.")
     new_items = {item.line_key: item for item in version.items.all()}
     for item in order.items.all():
         new = new_items.pop(item.line_key, None)
-        if new is None:
+        changed_materials = new is None or new.snapshot.get(
+            "materials", []
+        ) != item.snapshot.get("materials", [])
+        if new is None and item.retired:
+            continue
+        if new is None and (item.produced or item.delivered):
             raise ValidationError(
-                "Aditivo não pode remover item existente; registre cancelamento/compensação separadamente."
+                "Um item produzido/entregue não pode ser removido por este fluxo."
             )
-        if new.quantity < max(item.produced, item.delivered):
+        if new is not None and new.quantity < max(item.produced, item.delivered):
             raise ValidationError(
                 "Aditivo não pode reduzir quantidade já produzida/entregue."
             )
-        if (
-            item.consumptions.exists()
-            and new.snapshot["materials"] != item.snapshot["materials"]
-        ):
-            raise ValidationError(
-                "Este item já consumiu materiais. Alteração da ficha exige conciliação específica antes do aditivo."
+        if new is not None and (item.produced or item.delivered):
+
+            def recipe(snapshot, quantity):
+                result = {}
+                for line in snapshot.get("materials", []):
+                    identity = (line["material"], line["unit"])
+                    result[identity] = (
+                        result.get(identity, Decimal(0))
+                        + Decimal(line["quantity"]) / quantity
+                    )
+                return result
+
+            if recipe(new.snapshot, new.quantity) != recipe(
+                item.snapshot, item.quantity
+            ):
+                raise ValidationError(
+                    "A composição de um item produzido/entregue não pode ser substituída por este fluxo."
+                )
+        if changed_materials:
+            if item.sessions.filter(ended_at__isnull=True).exists():
+                raise ValidationError(
+                    "Pause o cronômetro do item antes de conciliar materiais."
+                )
+            consumed = sum(
+                (
+                    net_consumed(entry.movement)
+                    for entry in item.consumptions.select_related("movement")
+                ),
+                Decimal(0),
             )
-        if (
-            StockReservation.objects.filter(reference=item.pk, remaining__gt=0).exists()
-            and new.snapshot["materials"] != item.snapshot["materials"]
-        ):
-            raise ValidationError(
-                "Libere as reservas deste item antes de alterar a ficha no aditivo."
-            )
-        item.quantity = new.quantity
-        item.description = new.description
-        item.snapshot = new.snapshot
-        item.save(update_fields=["quantity", "description", "snapshot"])
+            if consumed > 0 and not reconciliation_reason.strip():
+                raise ValidationError(
+                    "Informe o motivo da conciliação: materiais já usados permanecem como consumo/custo histórico. Recupere somente sobras físicas pelo fluxo próprio."
+                )
+            for reservation in StockReservation.objects.filter(
+                reference=item.pk, remaining__gt=0, layer__material__owner=owner
+            ):
+                release_reservation(
+                    owner=owner,
+                    reservation_id=reservation.pk,
+                    key=uuid.uuid5(
+                        version.pk, "amendment_release_" + str(reservation.pk)
+                    ),
+                )
+        if new is None:
+            item.retired = True
+            item.save(update_fields=["retired"])
+        else:
+            item.retired = False
+            item.quantity = new.quantity
+            item.description = new.description
+            item.snapshot = new.snapshot
+            item.save(update_fields=["retired", "quantity", "description", "snapshot"])
     for new in new_items.values():
         OrderItem.objects.create(
             order=order,
@@ -433,7 +490,12 @@ def apply_amendment(*, owner, order_id, version_id):
             snapshot=new.snapshot,
         )
     order.current_version = version
-    order.save(update_fields=["current_version"])
+    if (
+        order.delivery_status == "delivered"
+        and order.items.filter(retired=False).exclude(delivered=F("quantity")).exists()
+    ):
+        order.delivery_status = "not_sent"
+    order.save(update_fields=["current_version", "delivery_status"])
     from finance.models import PaymentAllocation
 
     PaymentAllocation.objects.filter(version=version, order__isnull=True).update(
@@ -443,6 +505,72 @@ def apply_amendment(*, owner, order_id, version_id):
         owner=owner,
         action="amendment_applied",
         object_id=order.pk,
-        reason=f"Versão {version.number}",
+        reason=(f"Versão {version.number}: " + reconciliation_reason)[:200],
     )
     return order
+
+
+@transaction.atomic
+def record_expense(*, owner, order_id, amount, date, description, key, reverses=None):
+    from .models import ActualExpense
+    from datetime import date as Date
+
+    if (
+        not isinstance(amount, Decimal)
+        or not amount.is_finite()
+        or amount <= 0
+        or amount > Decimal("9999999999.99")
+        or amount != amount.quantize(Decimal(".01"))
+    ):
+        raise ValidationError(
+            "Informe uma despesa positiva com até duas casas decimais."
+        )
+    if not isinstance(date, Date) or not description.strip() or len(description) > 200:
+        raise ValidationError("Informe data e descrição de até 200 caracteres.")
+    op, repeated = begin_operation(
+        owner,
+        key,
+        "order_expense",
+        {
+            "order": order_id,
+            "amount": amount,
+            "date": date,
+            "description": description,
+            "reverses": reverses,
+        },
+    )
+    if repeated:
+        return op.result
+    order = get_object_or_404(
+        Order.objects.select_for_update(), pk=order_id, owner=owner
+    )
+    original = None
+    if reverses:
+        original = get_object_or_404(
+            ActualExpense.objects.select_for_update(),
+            pk=reverses,
+            order=order,
+            reverses__isnull=True,
+        )
+        if (
+            ActualExpense.objects.filter(reverses=original).exists()
+            or amount != original.amount
+        ):
+            raise ValidationError(
+                "A reversão precisa ter o valor original e só pode ser registrada uma vez."
+            )
+    expense = ActualExpense.objects.create(
+        order=order,
+        key=op.pk,
+        amount=amount,
+        date=date,
+        description=description,
+        reverses=original,
+    )
+    AuditEvent.objects.create(
+        owner=owner,
+        action="expense_reversed" if original else "expense_recorded",
+        object_id=expense.pk,
+        reason=description,
+    )
+    return finish(op, {"expense": str(expense.pk)})

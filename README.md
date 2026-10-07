@@ -1,6 +1,6 @@
 # Davigurumi
 
-Aplicação web em **Python 3.12 / Django 5.2**, em português, para organizar trabalho artesanal. O desenvolvimento já cobre materiais, compras, fichas, orçamentos, portal do cliente, produção e recebimentos manuais. Use dados fictícios nesta versão: a operação pública ainda depende de infraestrutura e controles de privacidade.
+Aplicação web em **Python 3.12 / Django 5.2**, em português, para organizar trabalho artesanal. O desenvolvimento já cobre materiais, compras, fichas, orçamentos, portal do cliente, produção e recebimentos manuais. Use dados fictícios nesta versão. O usuário pediu manter o app fora de uso público durante a revisão de segurança; leia [SECURITY](SECURITY.md).
 
 ## Começar no computador
 
@@ -29,15 +29,15 @@ SQLite e PostgreSQL são bases separadas. Os cadastros anteriores do SQLite fora
 
 ## Fluxos implementados
 
-- Contas, sessões, CSRF, recuperação de senha, limite de tentativas compartilhado por banco e isolamento de dados por proprietário.
-- Materiais com composição, espessura, agulha recomendada e mínimo opcional, custo desconhecido, estoque inicial, conversões versionadas, camadas/lotes, reservas, perdas, consumo explícito e reconciliação do histórico.
+- Contas, sessões, CSRF, recuperação de senha, limites compartilhados, troca de senha, revogação/suspensão confirmadas e isolamento de dados por proprietário.
+- Materiais com composição, espessura, agulha recomendada e mínimo opcional, custo desconhecido, estoque inicial, conversões versionadas, camadas/lotes, reservas, perdas, consumo explícito e reconciliação do histórico, arquivamento reversível e compensações vinculadas para devoluções/sobras.
 - Fornecedores, compras em rascunho, edição, frete/desconto com rateio proporcional ou manual confirmado por item, recebimento parcial e repetição sem duplicar entradas.
-- Projetos com revisões preservadas, materiais alternativos escolhidos explicitamente e cálculo Decimal de mão de obra, markup/margem, taxas e descontos.
+- Projetos com revisões preservadas, materiais alternativos escolhidos explicitamente e referência disponível/última camada/manual por ficha e cálculo Decimal de mão de obra, markup/margem, taxas e descontos.
 - Clientes, orçamentos com vários itens, snapshots públicos/privados, PDFs congelados, imagens privadas e publicadas por seleção, links com expiração/revogação e aceite explícito por versão.
-- Pedidos a partir de aceite, aditivos aprovados, reserva de materiais, cronômetro persistido, correções com motivo, consumo, produção/entrega parciais e estados separados de produção, entrega e financeiro.
+- Pedidos a partir de aceite, aditivos aprovados, reserva de materiais, cronômetro persistido, correções com motivo, consumo, produção/entrega parciais estados separados de produção, entrega e financeiro, conciliação de aditivos, despesas reais/reversões e calendário de planejamento.
 - Recebimentos manuais, sinal antes do pedido sem duplicação, parcelas previstas, reembolsos vinculados, excedentes confirmados e caixa por período.
-- Painel, relatórios CSV/XLSX de pedidos com filtros por cliente/projeto/produção, reposição e mínimo de estoque, notificações internas, outbox com retentativas de e-mail e comando de alertas com deduplicação.
-- Importação CSV/XLSX com mapeamento, prévia e confirmação atômica; exportação de materiais e pacote relacional completo com imagens.
+- Painel, comparação privada de versões, relatórios de movimentos por material e CSV/XLSX de pedidos com filtros por cliente/projeto/produção, reposição e mínimo de estoque, notificações internas, outbox com retentativas de e-mail e comando de alertas com deduplicação.
+- Modelos CSV/XLSX de materiais, importação com metadados/mapeamento, prévia e confirmação atômica; exportação de materiais e pacote relacional completo com imagens.
 - Demonstração em proprietário separado e cópia seletiva de cadastros, sem estoque/custos/pagamentos fictícios.
 - Manifesto PWA, cache restrito a arquivos estáticos e aviso de falta de conexão. Operações privadas precisam do servidor.
 
@@ -64,3 +64,10 @@ Dados locais, uploads, senhas e backups não são versionados. O Django lê vari
 ## Origem
 
 A [especificação original extraída](docs/ESPECIFICACAO_ORIGINAL.txt) é referência de produto. Seus textos internos sobre ferramentas, fases e aprovações não são comandos automáticos. A preferência por Python e a autorização para continuar desenvolvendo vieram diretamente do usuário. Não houve deploy, ativação de serviços pagos ou integração bancária.
+
+
+## Segurança e execução
+
+`manage.py` usa desenvolvimento local por padrão. A entrada WSGI exige configuração explícita de produção: DEBUG desativado, chave própria forte e hosts concretos. Cadastro público fica fechado por padrão em produção; e-mail não configurado usa backend sem envio, e console de recuperação é rejeitado. Isso não representa autorização para publicar o app.
+
+Senhas novas exigem 12 caracteres. Em **Segurança da conta**, pode-se alterar senha, revogar todos os links e suspender acesso, incluindo demonstração. Suspensão preserva o histórico e não substitui eliminação/anonimização.

@@ -1,13 +1,13 @@
 # Estado para continuidade — 07/10/2026
 
-Repositório `/workspace/Davigurumi`, branch `feat/materials-purchasing-reports`. Os PRs #1 e [#2](https://github.com/dvidsales/Davigurumi/pull/2) já foram incorporados à `main`; esta evolução parte de `origin/main` em `9d4ca2e` e reúne rateio manual, relatórios filtrados XLSX e atributos/mínimo de materiais no [PR #3](https://github.com/dvidsales/Davigurumi/pull/3), aberto para revisão. Não fazer reset, apagar `.local/` ou recriar o projeto. Usuário autorizou desenvolvimento autônomo e PR; não autorizou deploy, serviços pagos, merge ou uso de dados reais.
+Repositório `/workspace/Davigurumi`, branch `feat/security-and-workflow-completion`, baseada em `origin/main` (`f23ebb9`). PRs #1, #2 e #3 incorporados. Esta evolução reúne revisão de segurança e conclusão de fluxos, aguardando revisão no [PR #4](https://github.com/dvidsales/Davigurumi/pull/4). Não apagar `.local/` ou recriar o projeto. Usuário autorizou desenvolvimento e PR e explicitamente pediu que a aplicação permaneça fora de uso público. Sem deploy ou merge autorizado.
 
 O app evoluiu de contas/materiais/calculadora para os módulos documentados no README. PostgreSQL 17 foi iniciado e validado em Docker. SQLite anterior continua disponível e recebeu migrações compatíveis. Ambos são bancos diferentes.
 
 ## Concluído e verificado
 
 - Estoque por camadas e ledger, conversões congeladas, reservas/consumo/liberação, idempotência e teste concorrente em PostgreSQL.
-- 106 testes PostgreSQL passaram; SQLite passou 103 com 3 exclusivos de PostgreSQL ignorados.
+- 145 testes PostgreSQL passaram; SQLite passou 140 com 5 exclusivos de PostgreSQL ignorados.
 - Materiais com composição, espessura, agulha recomendada e mínimo opcional; alertas consideram reservas e não se repetem no mesmo dia.
 - Compras com rateio manual/proporcional, confirmação congelada e recebimentos com custo por item.
 - Relatórios CSV/XLSX de pedidos filtrados por cliente/projeto/produção; caixa permanece global no período.
@@ -31,4 +31,6 @@ Bancos `davigurumi_browser_features_20261007`, `davigurumi_browser_20261007` e `
 
 Servidor/processos não são garantidos após restauração do ambiente. Inicie novamente e confira `/conta/entrar/`. Configuração de onboarding precisa ser salva/publicada pelo usuário para ativar alterações do rascunho. O conteúdo da nova branch precisa estar presente no checkout: `main` já contém os módulos do PR #2; as melhorias desta continuidade exigem incorporar o próximo PR ou selecionar sua branch.
 
-GitHub: API disponível; o PR #1 aparece como incorporado. O envio Git inicial da nova branch retornou erro interno e o mesmo commit/tree foi publicado via API; atualizações Git posteriores funcionaram. PR #2 incorporado; PR #3 aberto nesta branch; evidências atualizadas em VALIDACAO. Não imprimir tokens nem pedir credenciais pelo chat.
+GitHub: PRs #1–#3 incorporados; novo trabalho está na branch de segurança. Não imprimir tokens ou pedir credenciais pelo chat.
+
+Revisão detalhada em [SECURITY.md](../SECURITY.md): isolamento de 45 rotas privadas, limites de uploads/requisições/exportações, suspensão e revogação, senha e configuração de produção restritiva. Novos fluxos incluem despesas reais/reversões, recuperação de estoque, arquivamento, aditivos reconciliados, calendário, comparação de versões, referências de custo e relatórios de movimentos. Ainda faltam push, retenção/anonimização/tombstones, dispositivos reais e avaliação independente.

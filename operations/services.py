@@ -38,13 +38,20 @@ def deliver_outbox(limit=50):
                 break
             row.attempts += 1
             try:
-                send_mail(
+                if (
+                    settings.EMAIL_BACKEND
+                    == "django.core.mail.backends.dummy.EmailBackend"
+                ):
+                    raise OSError("O envio de e-mail está desativado.")
+                delivered = send_mail(
                     "Atualização no Davigurumi",
                     row.notification.message,
                     settings.DEFAULT_FROM_EMAIL,
                     [row.notification.owner.email],
                     fail_silently=False,
                 )
+                if delivered != 1:
+                    raise OSError("O backend não confirmou o envio.")
             except (smtplib.SMTPException, OSError) as exc:
                 row.last_error = type(exc).__name__
                 row.next_attempt = timezone.now() + timedelta(

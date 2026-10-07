@@ -91,5 +91,57 @@ def reports(request):
             ).distinct()
         context.update(cash=cash_period(request.user, start, end), orders=orders)
         if request.GET.get("export") in {"csv", "xlsx"}:
-            return export_order_report(orders, request.GET["export"])
+            if orders.count() > 5000:
+                form.add_error(
+                    None, "Escolha filtros/período com até 5000 pedidos por exportação."
+                )
+            else:
+                return export_order_report(orders, request.GET["export"])
     return render(request, "operations/reports.html", context)
+
+
+@never_cache
+@login_required
+def material_report(request):
+    from django.utils import timezone
+    from materials.models import StockMovement
+    from .material_reporting import MaterialPeriodForm, export_movements
+
+    today = timezone.localdate()
+    data = request.GET.copy()
+    data.setdefault("start", today.replace(day=1).isoformat())
+    data.setdefault("end", today.isoformat())
+    form = MaterialPeriodForm(data, owner=request.user)
+    context = {"form": form}
+    if form.is_valid():
+        movements = (
+            StockMovement.objects.filter(
+                material__owner=request.user,
+                created_at__date__range=(
+                    form.cleaned_data["start"],
+                    form.cleaned_data["end"],
+                ),
+            )
+            .select_related("material")
+            .order_by("created_at", "id")
+        )
+        if form.cleaned_data["material"]:
+            movements = movements.filter(material=form.cleaned_data["material"])
+        if request.GET.get("export") in {"csv", "xlsx"}:
+            if movements.count() > 5000:
+                form.add_error(
+                    None,
+                    "Escolha um período/material com até 5000 movimentos por exportação.",
+                )
+            else:
+                return export_movements(movements, request.GET["export"])
+        from django.core.paginator import Paginator
+
+        context["page_obj"] = Paginator(movements, 100).get_page(
+            request.GET.get("page")
+        )
+        query = request.GET.copy()
+        query.pop("page", None)
+        query.pop("export", None)
+        context["query"] = query.urlencode()
+    return render(request, "operations/material_report.html", context)

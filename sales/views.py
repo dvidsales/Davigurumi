@@ -39,7 +39,9 @@ def clients(request):
     if request.method == "POST" and form.is_valid():
         client = form.save(commit=False)
         client.owner = request.user
-        client.save()
+        with transaction.atomic():
+            get_user_model().objects.select_for_update().get(pk=request.user.pk)
+            client.save()
         return redirect("sales:clients")
     return render(
         request,
@@ -480,3 +482,51 @@ def revoke(request, pk):
         "Acesso pelos links desta versão revogado. PDF e aceite históricos foram preservados.",
     )
     return redirect("sales:detail", pk=version.quote_id)
+
+
+@never_cache
+@login_required
+def compare(request, pk):
+    from .forms import CompareForm
+
+    quote = get_object_or_404(Quote, pk=pk, owner=request.user)
+    versions = list(quote.versions.order_by("-number")[:2])
+    data = request.GET or {"before": versions[-1].pk, "after": versions[0].pk}
+    form = CompareForm(data, quote=quote)
+    context = {"quote": quote, "form": form}
+    if form.is_valid():
+        before, after = form.cleaned_data["before"], form.cleaned_data["after"]
+        old = {item.line_key: item for item in before.items.all()}
+        new = {item.line_key: item for item in after.items.all()}
+        rows = []
+        for key in sorted(set(old) | set(new), key=str):
+            a, b = old.get(key), new.get(key)
+            changed = (
+                not a
+                or not b
+                or (a.description, a.quantity, a.total, a.snapshot)
+                != (b.description, b.quantity, b.total, b.snapshot)
+            )
+            rows.append(
+                {
+                    "before": a,
+                    "after": b,
+                    "status": (
+                        "Adicionado"
+                        if not a
+                        else (
+                            "Removido"
+                            if not b
+                            else "Alterado" if changed else "Preservado"
+                        )
+                    ),
+                }
+            )
+        context.update(
+            before=before,
+            after=after,
+            rows=rows,
+            terms_changed=(before.terms, before.delivery_date, before.valid_days)
+            != (after.terms, after.delivery_date, after.valid_days),
+        )
+    return render(request, "sales/compare.html", context)

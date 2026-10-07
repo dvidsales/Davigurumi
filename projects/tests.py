@@ -127,3 +127,26 @@ class RevisionEditingTests(TestCase):
         project.refresh_from_db()
         self.assertEqual(project.current_revision.materials.count(), 0)
         self.assertEqual(old.revision.materials.count(), 1)
+
+
+class ReferencePolicyTests(TestCase):
+    def test_available_latest_and_manual_references_are_distinct_and_revision_is_preserved(self):
+        from .services import snapshot_project, edit_project
+        from materials.stock import receive_stock
+        import uuid
+        owner=get_user_model().objects.create_user(username='reference_policy',email='reference_policy@example.test')
+        material=Material.objects.create(owner=owner,name='Fio',kind='yarn',unit='g')
+        for price in ['.1','.3']:
+            receive_stock(owner=owner,material_id=material.pk,quantity=Decimal('100'),unit_cost=Decimal(price),key=uuid.uuid4())
+        for policy,expected in [('available',Decimal('2')),('latest',Decimal('3')),('manual',Decimal('4'))]:
+            project=create_project(owner=owner,name=policy,reference_policy=policy)
+            add_material(owner=owner,project_id=project.pk,material_id=material.pk,quantity=Decimal('10'),manual_unit_cost=Decimal('.4'))
+            project.refresh_from_db()
+            snapshot=snapshot_project(owner=owner,revision_id=project.current_revision_id,quantity=1)
+            self.assertEqual(Decimal(snapshot['cost']),expected)
+            self.assertEqual(snapshot['reference_policy'],policy)
+        original=project.current_revision
+        from .services import clone_revision
+        new,_=clone_revision(project)
+        self.assertEqual(new.reference_policy,'manual')
+        self.assertEqual(original.reference_policy,'manual')

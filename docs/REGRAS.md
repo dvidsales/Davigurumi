@@ -52,3 +52,14 @@ Demonstração usa proprietário separado, mantendo autenticação da conta real
 Composição, espessura e agulha recomendada são descrições opcionais; não alteram conversões ou custo. O mínimo é informado na unidade base e deve ser inteiro para materiais em unidades. Mínimo zero desativa o aviso. A visão geral e os relatórios comparam o mínimo com o estoque disponível, após reservas; alertas gerados pelo comando são deduplicados por material/dia e proprietário. Não há agendador automático embutido.
 
 Cliente, projeto e estado de produção filtram os pedidos criados no período. O filtro de projeto consulta os itens da versão comercial atual, preservando uma linha por pedido mesmo quando há vários itens desse projeto. O caixa permanece global da conta por data efetiva de recebimento/reembolso. CSV e XLSX usam as mesmas linhas, neutralizam nomes com aparência de fórmula e mostram total/saldo/crédito atuais, não um saldo histórico reconstruído. XLSX inclui valores monetários numéricos com duas casas de exibição.
+
+
+## Compensações, despesas e aditivos
+
+Compensar acrescenta movimento oposto vinculado à origem. A soma não pode superar o original. Devolver entrada exige saldo livre da camada original; recuperar sobra cria camada nova com o custo/lote histórico e não recria reserva. Material indivisível exige quantidade inteira. Consumo vinculado ao pedido só é compensado pelo pedido. Histórico recebido da compra continua cumulativo; compensação física não faz reembolso do fornecedor ou novo recebimento automático.
+
+Custo consumido e necessidades de reposição usam consumo líquido de sobras. Despesas reais são registros positivos; corrigir exige reversão inteira com motivo e novo lançamento. Não alteram pagamentos do cliente. Resultado sobre custos registrados inclui consumo líquido, sessões encerradas/corrigidas e despesas líquidas; desconhecidos/sessão ativa tornam o subtotal parcial, e despesas não lançadas/tributos ainda podem faltar.
+
+Aditivo precisa de aceite da versão exata e pedido aberto. Reservas dos itens alterados/removidos são liberadas; a nova necessidade é reservada explicitamente. Itens retirados permanecem com histórico, marcados como removidos, sem novos trabalhos/entregas. Consumos anteriores não são apagados: alterações exigem motivo de conciliação, e somente sobra física volta ao estoque. Quantidade produzida/entregue não é reduzida; composição de peça já produzida não é substituída por este fluxo.
+
+Média disponível, última camada registrada e referência manual são políticas de estimativa por revisão de ficha. Última camada pode ser recuperação de sobra, não necessariamente compra; referência desconhecida não vira zero. Consumo real continua com custo histórico da camada utilizada.

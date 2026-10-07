@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.conf import settings
+from django.http import HttpResponse
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
@@ -12,6 +14,8 @@ from .forms import SignupForm
 def signup(request):
     if request.user.is_authenticated:
         return redirect("dashboard")
+    if not settings.PUBLIC_SIGNUP_ENABLED:
+        return HttpResponse("Cadastro público desabilitado neste ambiente.", status=403)
     form = SignupForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         try:
@@ -37,7 +41,7 @@ def signup(request):
 def dashboard(request):
     from operations.reporting import overview
 
-    materials = Material.objects.filter(owner=request.user)
+    materials = Material.objects.filter(owner=request.user, is_archived=False)
     return render(
         request,
         "dashboard.html",

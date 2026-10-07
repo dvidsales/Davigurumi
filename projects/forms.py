@@ -4,6 +4,21 @@ from materials.models import Material
 
 
 class ProjectForm(forms.Form):
+    reference_policy = forms.ChoiceField(
+        label="Referência de custo dos materiais",
+        required=False,
+        initial="available",
+        choices=[
+            ("available", "Média do estoque disponível"),
+            ("latest", "Última camada registrada"),
+            ("manual", "Referência manual da ficha"),
+        ],
+        help_text="É uma estimativa. Consumos reais continuam usando o custo histórico da camada consumida.",
+    )
+
+    def clean_reference_policy(self):
+        return self.cleaned_data.get("reference_policy") or "available"
+
     name = forms.CharField(label="Nome do projeto", max_length=160)
     description = forms.CharField(
         label="Descrição que pode ser apresentada ao cliente",
@@ -78,7 +93,9 @@ class MaterialLineForm(forms.Form):
 
     def __init__(self, *args, owner, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["material"].queryset = Material.objects.filter(owner=owner)
+        self.fields["material"].queryset = Material.objects.filter(
+            owner=owner, is_archived=False
+        )
 
 
 class AlternativeForm(forms.Form):
@@ -97,4 +114,6 @@ class AlternativeForm(forms.Form):
 
     def __init__(self, *args, owner, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["material"].queryset = Material.objects.filter(owner=owner)
+        self.fields["material"].queryset = Material.objects.filter(
+            owner=owner, is_archived=False
+        )

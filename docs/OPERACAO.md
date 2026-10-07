@@ -18,7 +18,7 @@ Sem `POSTGRES_DB`, o Django seleciona `.local/db.sqlite3`. Não apague o arquivo
 
 ## E-mail e tarefas
 
-Variáveis documentadas em `.env.example`. O aplicativo lê variáveis do processo, não `.env` automaticamente. Console é padrão; envio real requer backend SMTP, host/porta/remetente/credenciais e verificação do provedor. Não colocar segredos no código, terminal compartilhado ou chat.
+Variáveis documentadas em `.env.example`. O aplicativo lê variáveis do processo, não `.env` automaticamente. Console é padrão somente no desenvolvimento. Produção usa backend sem envio até configurar um backend real; console é rejeitado para não colocar links de recuperação nos logs. Envio real requer backend SMTP, host/porta/remetente/credenciais e verificação do provedor. Não colocar segredos no código, terminal compartilhado ou chat.
 
 ```bash
 bash scripts/with_postgres.sh manage.py generate_alerts
@@ -50,3 +50,20 @@ Ainda falta: cópia diária agendada, destino independente da máquina, monitora
 Definir host HTTPS, servidor WSGI/ASGI, proxy confiável, segredo diferente do desenvolvimento, `DJANGO_DEBUG=0`, hosts/CSRF origens explícitos, staticfiles, armazenamento privado, SMTP e agendador. Não expor `.local/` ou caminhos de arquivos como mídia pública. Configurar também redação de tokens nos logs do proxy. Cookies seguros/redirect HTTPS existem, mas proxy e HSTS precisam de configuração conforme a infraestrutura.
 
 `python manage.py check --deploy` deve ser revisado nessa configuração real; não foi usado para afirmar prontidão pública. Implantação/merge/serviços pagos ainda não foram executados nem autorizados.
+
+
+## Controles de segurança e manutenção
+
+Settings sem DEBUG explícito assumem produção e exigem segredo/hosts; `manage.py` opta pelo desenvolvimento local por padrão. Para qualquer comando de operação real, fornecer `DJANGO_DEBUG=0` e demais variáveis explicitamente. Cadastro público de produção fica fechado; `DJANGO_PUBLIC_SIGNUP=1` só deve ser considerado após verificação de e-mail/controle de abuso.
+
+Limites técnicos atuais: uploads privados 5 MB, pacote 50 MB, corpo não-arquivo 1 MB, até 500 campos/10 arquivos, 20 prévias/recibos recentes por conta, exportação de relatórios até 5000 linhas, 15 tentativas de autenticação/900 s, 120 leituras de portal/60 s, 60 leituras de painel/relatórios/60 s e 120 outras gravações/60 s por endereço direto. Não substituem quotas de armazenamento nem proteção de borda. Arquivos têm permissão 0600 e diretórios privados 0700.
+
+```bash
+bash scripts/with_postgres.sh manage.py prune_transient
+# Após conferir a simulação, aplicar quando autorizado:
+bash scripts/with_postgres.sh manage.py prune_transient --apply
+```
+
+A limpeza remove somente limites expirados há mais de um dia, sessões expiradas e prévias/recibos com mais de 30 dias. Não elimina estoque, contratos, pagamentos, arquivos ou auditoria. A UI permite descartar apenas prévias não aplicadas. Não foi executada limpeza dos dados de desenvolvimento nesta continuidade.
+
+Conta suspensa não faz login nem acessa portal; dados e hashes históricos continuam armazenados. Reativação deve ser feita administrativamente com registro/motivo e não reativa links revogados. Isso não é procedimento de eliminação de dados.

@@ -1,5 +1,7 @@
 name: Django tests
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -21,8 +23,8 @@ jobs:
       POSTGRES_HOST: localhost
       POSTGRES_SSLMODE: disable
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -30,3 +32,16 @@ jobs:
       - run: python manage.py check
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py test --verbosity 2
+
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit==2.10.1 bandit==1.9.4
+      - run: pip-audit -r requirements.txt
+      - run: bandit -r accounts config materials purchasing projects sales production finance operations portability pricing -ll

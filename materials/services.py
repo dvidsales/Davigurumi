@@ -6,6 +6,10 @@ from .models import StockMovement
 
 @transaction.atomic
 def create_material(*, form, owner):
+    from django.contrib.auth import get_user_model
+
+    get_user_model().objects.select_for_update().get(pk=owner.pk)
+
     def existing_result():
         existing = Material.objects.filter(
             owner=owner, request_key=form.cleaned_data["request_key"]
@@ -60,3 +64,34 @@ def create_material(*, form, owner):
         opening.full_clean()
         opening.save()
     return material
+
+
+@transaction.atomic
+def archive_material(*, owner, material_id, archived, reason, key):
+    from django.shortcuts import get_object_or_404
+    from .stock import begin_operation, finish
+    from operations.models import AuditEvent
+
+    if not isinstance(archived, bool) or not reason.strip() or len(reason) > 200:
+        raise ValidationError("Informe a operação e um motivo de até 200 caracteres.")
+    op, repeated = begin_operation(
+        owner,
+        key,
+        "material_archive",
+        {"material": material_id, "archived": archived, "reason": reason},
+    )
+    if repeated:
+        return op.result
+    material = get_object_or_404(
+        Material.objects.select_for_update(), pk=material_id, owner=owner
+    )
+    if material.is_archived != archived:
+        material.is_archived = archived
+        material.save(update_fields=["is_archived"])
+        AuditEvent.objects.create(
+            owner=owner,
+            action="material_archived" if archived else "material_restored",
+            object_id=material.pk,
+            reason=reason,
+        )
+    return finish(op, {"material": str(material.pk), "archived": archived})

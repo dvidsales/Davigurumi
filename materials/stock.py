@@ -391,3 +391,103 @@ def reference_cost(material, method="average"):
         )
         / total
     )
+
+
+def net_consumed(movement):
+    recovered = sum((entry.quantity for entry in movement.compensations.all()), ZERO)
+    return -movement.quantity - recovered
+
+
+@transaction.atomic
+def compensate_movement(*, owner, movement_id, quantity, key, reason, item_id=None):
+    """Append a linked compensation; never modify the origin or recreate a reserve."""
+    valid_quantity(quantity)
+    if not reason.strip() or len(reason) > 100:
+        raise ValidationError("Informe um motivo de até 100 caracteres.")
+    op, repeated = begin_operation(
+        owner,
+        key,
+        "stock_compensation",
+        {
+            "movement": movement_id,
+            "quantity": quantity,
+            "reason": reason,
+            "item": item_id,
+        },
+    )
+    if repeated:
+        return op.result
+    original = get_object_or_404(
+        StockMovement.objects.select_for_update(of=("self",)).select_related(
+            "material", "layer"
+        ),
+        pk=movement_id,
+        material__owner=owner,
+    )
+    if original.reverses_id or not original.layer_id:
+        raise ValidationError("Selecione um movimento original com camada de estoque.")
+    from production.models import Consumption
+
+    consumption = Consumption.objects.filter(movement=original).first()
+    if consumption and str(consumption.item_id) != str(item_id):
+        raise ValidationError(
+            "A sobra deste consumo deve ser registrada pelo pedido correspondente."
+        )
+    if original.material.unit == "un" and quantity != quantity.to_integral_value():
+        raise ValidationError("Materiais em unidades exigem quantidade inteira.")
+    compensated = sum(
+        (abs(entry.quantity) for entry in original.compensations.all()), ZERO
+    )
+    if quantity > abs(original.quantity) - compensated:
+        raise ValidationError(
+            "A compensação ultrapassa a quantidade original ainda não compensada."
+        )
+    material = Material.objects.select_for_update().get(pk=original.material_id)
+    if original.quantity < 0:
+        if original.kind not in {"consumption", "loss"}:
+            raise ValidationError(
+                "Este tipo de saída não admite recuperação neste fluxo."
+            )
+        if material.physical_stock + quantity > LIMIT:
+            raise ValidationError("O saldo ultrapassaria o limite suportado.")
+        layer = CostLayer.objects.create(
+            material=material,
+            original_quantity=quantity,
+            physical=quantity,
+            unit_cost=original.unit_cost,
+            lot=original.layer.lot,
+        )
+        signed_quantity, kind = quantity, "return"
+    else:
+        layer = CostLayer.objects.select_for_update().get(pk=original.layer_id)
+        if quantity > layer.physical - layer.reserved:
+            raise ValidationError(
+                "Esta camada não tem saldo livre suficiente. Material consumido/reservado não pode ser devolvido como disponível."
+            )
+        layer.physical -= quantity
+        layer.save(update_fields=["physical"])
+        signed_quantity, kind = -quantity, "adjustment"
+    movement = StockMovement.objects.create(
+        material=material,
+        layer=layer,
+        quantity=signed_quantity,
+        unit_cost=original.unit_cost,
+        kind=kind,
+        operation=op,
+        reverses=original,
+        reason=reason,
+        conversion_snapshot=original.conversion_snapshot,
+    )
+    from operations.models import AuditEvent
+
+    AuditEvent.objects.create(
+        owner=owner, action="stock_compensated", object_id=movement.pk, reason=reason
+    )
+    return finish(
+        op,
+        {
+            "movement": str(movement.pk),
+            "layer": str(layer.pk),
+            "quantity": str(signed_quantity),
+        },
+    )

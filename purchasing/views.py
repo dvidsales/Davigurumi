@@ -1,5 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
@@ -33,7 +35,9 @@ def create(request):
     if request.method == "POST" and form.is_valid():
         purchase = form.save(commit=False)
         purchase.owner = request.user
-        purchase.save()
+        with transaction.atomic():
+            get_user_model().objects.select_for_update().get(pk=request.user.pk)
+            purchase.save()
         return redirect("purchasing:detail", pk=purchase.pk)
     return render(
         request,
@@ -53,7 +57,9 @@ def suppliers(request):
     if request.method == "POST" and form.is_valid():
         supplier = form.save(commit=False)
         supplier.owner = request.user
-        supplier.save()
+        with transaction.atomic():
+            get_user_model().objects.select_for_update().get(pk=request.user.pk)
+            supplier.save()
         return redirect("purchasing:suppliers")
     return render(
         request,

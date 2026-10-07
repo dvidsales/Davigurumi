@@ -2,7 +2,7 @@ import uuid
 from decimal import Decimal
 from django import forms
 from projects.models import Project, MaterialAlternative
-from .models import Client
+from .models import QuoteVersion, Client
 
 
 class ClientForm(forms.ModelForm):
@@ -130,3 +130,20 @@ class ImageForm(forms.Form):
     is_public = forms.BooleanField(
         label="Apresentar esta imagem ao cliente nesta versão", required=False
     )
+
+
+class CompareForm(forms.Form):
+    before = forms.ModelChoiceField(
+        label="Versão anterior", queryset=QuoteVersion.objects.none()
+    )
+    after = forms.ModelChoiceField(
+        label="Versão posterior", queryset=QuoteVersion.objects.none()
+    )
+
+    def __init__(self, *args, quote, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("before", "after"):
+            self.fields[name].queryset = quote.versions.order_by("number")
+            self.fields[name].label_from_instance = (
+                lambda obj: f"Versão {obj.number} — {obj.get_status_display()}"
+            )

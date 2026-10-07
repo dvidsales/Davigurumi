@@ -29,6 +29,7 @@
     <a class="{% if request.resolver_match.app_name == 'portability' %}active{% endif %}" href="{% url 'portability:index' %}">Importar e exportar</a>
     <a href="{% url 'operations:reports' %}">Relatórios e reposição</a>
     <a href="{% url 'demo' %}">Demonstração</a>
+    <a href="{% url 'account_security' %}">Segurança da conta</a>
   </nav>
   <div class="sidebar-bottom"><span class="version">VERSÃO INICIAL · DESENVOLVIMENTO</span>
     <p>{{ user.first_name|default:user.username }}</p>

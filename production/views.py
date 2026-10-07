@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
+from datetime import timedelta
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from materials.models import StockReservation
@@ -114,7 +115,10 @@ def action(request, pk):
             )
         elif choice == "amendment":
             services.apply_amendment(
-                owner=request.user, order_id=pk, version_id=request.POST.get("version")
+                owner=request.user,
+                order_id=pk,
+                version_id=request.POST.get("version"),
+                reconciliation_reason=request.POST.get("reconciliation_reason", ""),
             )
         else:
             raise ValidationError("Ação inválida.")
@@ -252,6 +256,7 @@ def settings(request, pk):
         request.POST or None,
         initial={
             "production_due": order.production_due,
+            "planned_start": order.planned_start,
             "delivery_status": (
                 order.delivery_status
                 if order.delivery_status != "delivered"
@@ -260,10 +265,11 @@ def settings(request, pk):
         },
     )
     if request.method == "POST" and form.is_valid():
+        order.planned_start = form.cleaned_data["planned_start"]
         order.production_due = form.cleaned_data["production_due"]
         if order.delivery_status != "delivered":
             order.delivery_status = form.cleaned_data["delivery_status"]
-        order.save(update_fields=["production_due", "delivery_status"])
+        order.save(update_fields=["planned_start", "production_due", "delivery_status"])
         return redirect("production:detail", pk=pk)
     return render(
         request,
@@ -274,3 +280,149 @@ def settings(request, pk):
             "description": "A entrega final é registrada por quantidades, separada da situação da produção.",
         },
     )
+
+
+@never_cache
+@login_required
+def expense(request, pk):
+    from .forms import ExpenseForm
+
+    order = get_object_or_404(Order, pk=pk, owner=request.user)
+    form = ExpenseForm(request.POST or None, order=order)
+    if request.method == "POST" and form.is_valid():
+        values = form.cleaned_data.copy()
+        values["reverses"] = values["reverses"].pk if values["reverses"] else None
+        try:
+            services.record_expense(owner=request.user, order_id=pk, **values)
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            return redirect("production:detail", pk=pk)
+    return render(
+        request,
+        "generic_form.html",
+        {
+            "form": form,
+            "heading": "Despesa real ou reversão",
+            "description": "Registre embalagem extra, envio e outros custos reais. Não repita materiais consumidos nem mão de obra já registrada. Para corrigir, reverta o valor inteiro com motivo e registre uma nova despesa. Isso não movimenta recebimentos do cliente.",
+        },
+    )
+
+
+@never_cache
+@login_required
+def recover(request, pk):
+    from .models import Consumption
+    from materials.forms import CompensationForm
+    from materials.stock import compensate_movement
+
+    consumption = get_object_or_404(
+        Consumption.objects.select_related("item", "movement__material"),
+        pk=pk,
+        item__order__owner=request.user,
+    )
+    form = CompensationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            compensate_movement(
+                owner=request.user,
+                movement_id=consumption.movement_id,
+                item_id=consumption.item_id,
+                **form.cleaned_data,
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            return redirect("production:detail", pk=consumption.item.order_id)
+    return render(
+        request,
+        "generic_form.html",
+        {
+            "form": form,
+            "heading": "Recuperar sobra física do pedido",
+            "description": f"Material: {consumption.movement.material.name}. Informe somente sobra que voltou fisicamente ao estoque; o consumo original é preservado e seu custo líquido é reduzido pela compensação. Reservas não são recriadas.",
+        },
+    )
+
+
+@never_cache
+@login_required
+def calendar(request):
+    from collections import defaultdict
+    from decimal import Decimal
+    from django.db.models import Q
+    from operations.reporting import PeriodForm
+
+    today = timezone.localdate()
+    data = request.GET.copy()
+    data.setdefault("start", today.replace(day=1).isoformat())
+    data.setdefault("end", (today + timedelta(days=30)).isoformat())
+    form = PeriodForm(data, owner=request.user)
+    context = {"form": form}
+    if form.is_valid():
+        start, end = form.cleaned_data["start"], form.cleaned_data["end"]
+        orders = (
+            Order.objects.filter(owner=request.user)
+            .filter(
+                Q(planned_start__range=(start, end))
+                | Q(production_due__range=(start, end))
+                | Q(current_version__delivery_date__range=(start, end))
+            )
+            .select_related("approved_version__quote", "current_version")
+            .prefetch_related("items__sessions__corrections")
+        )
+        if form.cleaned_data["status"]:
+            orders = orders.filter(status=form.cleaned_data["status"])
+        else:
+            orders = orders.exclude(status="cancelled")
+        if form.cleaned_data["client"]:
+            orders = orders.filter(
+                approved_version__quote__client=form.cleaned_data["client"]
+            )
+        if form.cleaned_data["project"]:
+            orders = orders.filter(
+                current_version__items__project_revision__project=form.cleaned_data[
+                    "project"
+                ]
+            ).distinct()
+        days = defaultdict(list)
+        for order in orders:
+            seconds = sum(
+                (
+                    Decimal(item.snapshot.get("seconds", "0"))
+                    for item in order.items.all()
+                    if not item.retired
+                ),
+                Decimal(0),
+            )
+            worked = sum(
+                (
+                    session.effective_seconds
+                    for item in order.items.all()
+                    for session in item.sessions.all()
+                    if session.ended_at
+                ),
+                0,
+            )
+            for date, label in [
+                (order.planned_start, "Início planejado"),
+                (order.production_due, "Prazo de produção"),
+                (order.current_version.delivery_date, "Entrega/retirada"),
+            ]:
+                if date and start <= date <= end:
+                    days[date].append(
+                        {
+                            "order": order,
+                            "label": label,
+                            "estimated_hours": seconds / 3600,
+                            "worked_hours": Decimal(worked) / 3600,
+                        }
+                    )
+        context["days"] = sorted(days.items())
+        context["unplanned"] = Order.objects.filter(
+            owner=request.user,
+            planned_start__isnull=True,
+            production_due__isnull=True,
+            status__in=["waiting", "in_progress", "paused"],
+        )
+    return render(request, "production/calendar.html", context)

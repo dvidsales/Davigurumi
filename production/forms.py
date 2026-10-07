@@ -1,6 +1,8 @@
 import uuid
 from decimal import Decimal
 from django import forms
+from django.utils import timezone
+from .models import ActualExpense
 from materials.models import Material, StockReservation
 
 
@@ -69,6 +71,24 @@ class DeliveryForm(forms.Form):
 
 
 class OrderSettingsForm(forms.Form):
+    planned_start = forms.DateField(
+        label="Início planejado",
+        required=False,
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+    )
+
+    def clean(self):
+        values = super().clean()
+        if (
+            values.get("planned_start")
+            and values.get("production_due")
+            and values["planned_start"] > values["production_due"]
+        ):
+            raise forms.ValidationError(
+                "O início planejado precisa ser anterior ou igual ao prazo de produção."
+            )
+        return values
+
     production_due = forms.DateField(
         label="Prazo de produção",
         required=False,
@@ -82,3 +102,34 @@ class OrderSettingsForm(forms.Form):
             ("sent", "Enviada"),
         ],
     )
+
+
+class ExpenseForm(forms.Form):
+    key = forms.UUIDField(widget=forms.HiddenInput, initial=uuid.uuid4)
+    amount = forms.DecimalField(
+        label="Custo efetivamente incorrido (R$)",
+        min_value=Decimal(".01"),
+        max_digits=12,
+        decimal_places=2,
+    )
+    date = forms.DateField(
+        label="Data da despesa",
+        initial=timezone.localdate,
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+    )
+    description = forms.CharField(label="Descrição / motivo", max_length=200)
+    reverses = forms.ModelChoiceField(
+        label="Despesa a reverter (opcional)",
+        queryset=ActualExpense.objects.none(),
+        required=False,
+        empty_label="Registrar nova despesa",
+    )
+
+    def __init__(self, *args, order, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["reverses"].queryset = order.expenses.filter(
+            reverses__isnull=True, reversal__isnull=True
+        )
+        self.fields["reverses"].label_from_instance = (
+            lambda obj: f"{obj.description}: R$ {obj.amount:.2f}"
+        )
