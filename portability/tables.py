@@ -3,6 +3,7 @@ import re
 import unicodedata
 import uuid
 import zipfile
+from xml.etree.ElementTree import ParseError
 from decimal import Decimal, InvalidOperation
 from datetime import timedelta
 from io import BytesIO, StringIO
@@ -130,7 +131,7 @@ def read_table(upload, separator=";", sheet=""):
             workbook.close()
         except ValidationError:
             raise
-        except (ValueError, KeyError, zipfile.BadZipFile, OSError) as exc:
+        except (ValueError, KeyError, zipfile.BadZipFile, OSError, ParseError) as exc:
             raise ValidationError("XLSX inválido ou corrompido.") from exc
     else:
         raise ValidationError("Use CSV ou XLSX, sem macros.")

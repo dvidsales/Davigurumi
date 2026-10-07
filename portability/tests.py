@@ -277,3 +277,26 @@ class TableLimitTests(TestCase):
         raw = ("nome;tipo;unidade\n" + "Fio;fio;g\n" * 2001).encode()
         with self.assertRaises(ValidationError):
             read_table(SimpleUploadedFile("large.csv", raw))
+
+    def test_corrupted_xlsx_xml_becomes_a_validation_error(self):
+        import zipfile
+
+        workbook = Workbook()
+        workbook.active["A1"] = "nome"
+        output = BytesIO()
+        workbook.save(output)
+        broken = BytesIO()
+        with zipfile.ZipFile(BytesIO(output.getvalue())) as source, zipfile.ZipFile(
+            broken, "w"
+        ) as destination:
+            for info in source.infolist():
+                destination.writestr(
+                    info,
+                    (
+                        b"<worksheet><broken>"
+                        if info.filename == "xl/worksheets/sheet1.xml"
+                        else source.read(info.filename)
+                    ),
+                )
+        with self.assertRaises(ValidationError):
+            read_table(SimpleUploadedFile("broken.xlsx", broken.getvalue()))
