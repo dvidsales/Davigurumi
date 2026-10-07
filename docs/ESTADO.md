@@ -1,18 +1,30 @@
-# Estado para continuidade
+# Estado para continuidade — 07/10/2026
 
-Primeira entrega, 07/10/2026. Repositório inicialmente vazio, sem commits.
-Usuário pediu início do desenvolvimento com preferência por Python. Implementação
-autorizada pelo pedido atual; nenhuma autorização de deploy/publicação/cobrança.
+Repositório `/workspace/Davigurumi`, branch `feat/artisan-workflow`. O PR #1 de fundação já foi incorporado à `main`; esta evolução parte desse conteúdo e segue numa nova branch, para revisão via PR. Não fazer reset, apagar `.local/` ou recriar o projeto. Usuário autorizou desenvolvimento autônomo e PR; não autorizou deploy, serviços pagos, merge ou uso de dados reais.
 
-Leia README, ARQUITETURA, REGRAS, ROADMAP e o código antes de continuar. Não recrie
-o projeto. Preserve banco `.local/`, alterações e migrations existentes. Use checkout
-atual; tarefas cloud já são isoladas, não criar worktree sem pedido explícito.
+O app evoluiu de contas/materiais/calculadora para os módulos documentados no README. PostgreSQL 17 foi iniciado e validado em Docker. SQLite anterior continua disponível e recebeu migrações compatíveis. Ambos são bancos diferentes.
 
-Concluído nesta fatia: Django, usuário UUID/e-mail único, sessões/cadastro/reset local,
-owner de materiais pela sessão, entrada inicial atômica/idempotente, busca/paginação,
-calculadora Decimal, telas pt-BR responsivas e testes. O texto fonte completo do PDF
-foi salvo para rastreabilidade; instruções internas são propostas de referência.
+## Concluído e verificado
 
-Próximo passo recomendado: completar fundação (PostgreSQL, CI, backup/restauração,
-rate limiting e configuração de e-mail) e então camadas/conversões/estoque. Não alegar
-fase concluída inteira, produto pronto ou T01–T26 aprovados. Consulte VALIDACAO.
+- Estoque por camadas e ledger, conversões congeladas, reservas/consumo/liberação, idempotência e teste concorrente em PostgreSQL.
+- Compras/recebimentos, revisões de fichas, alternativas explícitas, snapshots comerciais, PDF e imagens privadas.
+- Portal com CSRF e aceite por hash, expiração/revogação, decisões concorrentes, aditivos sem alterar aceite anterior.
+- Produção, cronômetro persistido, correções, produção/entregas parciais, pagamentos e reversões manuais.
+- Painel, relatórios, reposição, alertas deduplicados, outbox de e-mail, imports/exports e demonstração isolada.
+- Pacote completo exportado e restaurado no banco descartável de testes, preservando relações/estoque/pagamentos/PDF/arquivos; links importados revogados.
+- Backup PostgreSQL+arquivos restaurado em banco e diretório isolados; hashes de PDFs e arquivos conferidos; corrupção rejeitada.
+- Jornada real no Chromium: orçamento 63, sinal 20, consumo 50 g, produção/entrega e quitação por recebimento de 43. Isolamento de duas contas, cache estático, importação e telas de 360 px conferidos.
+
+## Antes de operação pública
+
+Leia PRIVACIDADE, OPERACAO e ROADMAP. Precisamos definir hospedagem Python/HTTPS, chave de produção, SMTP e remetente, destino de backup independente com frequência/retenção e agendador. Falta fechar política legal de retenção/exclusão, implementar eliminação/anonimização compatível com snapshots e tombstones na restauração. Push não está implementado. Não afirmar que todo o PRD ou T01–T26 está aprovado.
+
+## Ferramentas e retomada
+
+Python: `/workspace/.venvs/davigurumi/bin/python`. Container: `davigurumi-postgres`, porta `127.0.0.1:54329`. Segredo local em `.local/postgres.env`: não imprimir nem versionar. Inicie `scripts/dev_postgres.sh`; use `scripts/with_postgres.sh manage.py ...`.
+
+Bancos `davigurumi_browser_20261007` e `davigurumi_restore_full_20261007` têm somente exemplos de verificação, separados da base de desenvolvimento. Arquivos de teste: `.local/browser_files`; arquivos restaurados: `.local/restored_files/davigurumi_restore_full_20261007`. Backups de teste ficam fora do checkout em `/workspace/.backups/`. Não selecionar essas bases como dados de usuário.
+
+Servidor/processos não são garantidos após restauração do ambiente. Inicie novamente e confira `/conta/entrar/`. Configuração de onboarding precisa ser salva/publicada pelo usuário para ativar alterações do rascunho. O conteúdo da nova branch precisa estar presente no checkout: uma tarefa em `main` antes do novo merge terá somente a fundação anterior.
+
+GitHub: pushes e API estão disponíveis neste ambiente restaurado; o PR #1 aparece como incorporado. Não imprimir tokens nem pedir credenciais pelo chat.

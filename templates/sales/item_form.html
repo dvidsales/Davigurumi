@@ -1,0 +1,2 @@
+{% extends 'base.html' %}
+{% block content %}<header class="page-heading"><h1>{{ heading }}</h1></header><section class="card form-card"><p>Se houver alternativas de material, selecione o projeto abaixo para revisar as opções antes de adicioná-lo.</p><ul>{% for project in projects %}<li><a href="?project={{ project.pk }}">{{ project.name }}</a></li>{% endfor %}</ul><form method="post">{% csrf_token %}{% include 'form_fields.html' %}<button class="button">Adicionar item</button></form></section>{% endblock %}

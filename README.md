@@ -1,13 +1,8 @@
 # Davigurumi
 
-Aplicação web em **Python/Django**, em português, para organizar o trabalho artesanal.
-Primeira entrega funcional: contas, materiais, estoque inicial e simulação de preços.
-Projetos, compras, reservas, orçamentos, portal, produção e pagamentos permanecem no
-escopo do MVP e **ainda não estão implementados**.
+Aplicação web em **Python 3.12 / Django 5.2**, em português, para organizar trabalho artesanal. O desenvolvimento já cobre materiais, compras, fichas, orçamentos, portal do cliente, produção e recebimentos manuais. Use dados fictícios nesta versão: a operação pública ainda depende de infraestrutura e controles de privacidade.
 
-## Executar localmente
-
-Requer Python 3.12. No terminal, dentro deste repositório:
+## Começar no computador
 
 ```bash
 python -m venv .venv
@@ -17,27 +12,36 @@ python manage.py migrate --noinput
 python manage.py runserver
 ```
 
-No ambiente Codex atual, o Python com as dependências instaladas está em
-`/workspace/.venvs/davigurumi/bin/python`. Execute os comandos `manage.py` com esse
-Python a partir de `/workspace/Davigurumi`.
+O comando usa SQLite quando `POSTGRES_DB` não está definido. Crie sua conta no cadastro; não há senha padrão. A recuperação de senha usa o console de desenvolvimento. Para experimentar sem misturar exemplos e dados próprios, entre em **Demonstração** pela navegação.
 
-Crie sua própria conta na tela de cadastro. Não existe senha padrão nem conta
-administrativa pré-configurada. Use dados fictícios: esta versão não está pronta
-para operação pública ou uso com clientes reais.
+## Ambiente cloud atual
 
-## O que funciona
+Em `/workspace/Davigurumi`, o Python está em `/workspace/.venvs/davigurumi/bin/python`. Os helpers abaixo são específicos desse ambiente e usam Docker/PostgreSQL 17, acessível somente por loopback:
 
-- Cadastro, entrada e saída por sessão; senhas tratadas pelo Django; proteção CSRF.
-- Recuperação de senha: link gerado **no console de desenvolvimento**, sem envio SMTP.
-- Materiais de diferentes tipos, unidade base, marca, cor, código, notas e tex para fios.
-- Entrada de estoque inicial atômica; saldo derivado do histórico; até seis casas decimais.
-- Custo desconhecido separado de custo zero; unidades indivisíveis rejeitam frações.
-- Reenvio do mesmo formulário não duplica material nem entrada inicial.
-- Listagem paginada, busca por nome/marca/cor e detalhes restritos ao proprietário.
-- Calculadora de custo, mão de obra, adicionais, markup/margem, taxas e descontos.
-- Interface responsiva; páginas privadas enviam `Cache-Control: no-store`.
+```bash
+bash scripts/dev_postgres.sh
+bash scripts/with_postgres.sh manage.py migrate --noinput
+bash scripts/with_postgres.sh manage.py check
+bash scripts/with_postgres.sh manage.py runserver 127.0.0.1:8000
+```
 
-## Verificações
+SQLite e PostgreSQL são bases separadas. Os cadastros anteriores do SQLite foram preservados; não há migração automática de seus registros para PostgreSQL. A senha local do container é gerada em `.local/postgres.env`, ignorado pelo Git; não compartilhe esse arquivo.
+
+## Fluxos implementados
+
+- Contas, sessões, CSRF, recuperação de senha, limite de tentativas compartilhado por banco e isolamento de dados por proprietário.
+- Materiais, custo desconhecido, estoque inicial, conversões versionadas, camadas/lotes, reservas, perdas, consumo explícito e reconciliação do histórico.
+- Fornecedores, compras em rascunho, edição, frete/desconto rateados, recebimento parcial e repetição sem duplicar entradas.
+- Projetos com revisões preservadas, materiais alternativos escolhidos explicitamente e cálculo Decimal de mão de obra, markup/margem, taxas e descontos.
+- Clientes, orçamentos com vários itens, snapshots públicos/privados, PDFs congelados, imagens privadas e publicadas por seleção, links com expiração/revogação e aceite explícito por versão.
+- Pedidos a partir de aceite, aditivos aprovados, reserva de materiais, cronômetro persistido, correções com motivo, consumo, produção/entrega parciais e estados separados de produção, entrega e financeiro.
+- Recebimentos manuais, sinal antes do pedido sem duplicação, parcelas previstas, reembolsos vinculados, excedentes confirmados e caixa por período.
+- Painel, relatórios CSV, reposição, notificações internas, outbox com retentativas de e-mail e comando de alertas com deduplicação.
+- Importação CSV/XLSX com mapeamento, prévia e confirmação atômica; exportação de materiais e pacote relacional completo com imagens.
+- Demonstração em proprietário separado e cópia seletiva de cadastros, sem estoque/custos/pagamentos fictícios.
+- Manifesto PWA, cache restrito a arquivos estáticos e aviso de falta de conexão. Operações privadas precisam do servidor.
+
+## Verificar
 
 ```bash
 python manage.py check
@@ -45,28 +49,18 @@ python manage.py makemigrations --check --dry-run
 python manage.py test
 ```
 
-Veja [evidências e limitações](docs/VALIDACAO.md),
-[arquitetura](docs/ARQUITETURA.md), [regras](docs/REGRAS.md) e
-[plano de evolução](docs/ROADMAP.md).
+No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. Há CI configurada para PostgreSQL; sua execução no GitHub não foi confirmada nesta sessão.
 
-## Dados e configuração
+O teste de navegador exige Playwright, Chromium e **servidor ligado a uma base descartável separada**. Não execute no banco onde guarda dados próprios. Veja [VALIDACAO](docs/VALIDACAO.md).
 
-SQLite de desenvolvimento: `.local/db.sqlite3`, ignorado pelo Git. Não apague esse
-arquivo se quiser manter seus cadastros. Dependências e migrations ficam versionadas;
-bancos, senhas, arquivos enviados e variáveis reais não.
+## Limites e continuidade
 
-`.env.example` documenta os nomes de variáveis. O Django lê variáveis do processo:
-não carrega `.env` automaticamente. PostgreSQL pode ser selecionado com `POSTGRES_DB`
-e as demais variáveis `POSTGRES_*`; essa conexão ainda não foi validada nesta entrega.
+E-mail real, hospedagem/HTTPS, agendamento de tarefas, backup diário independente, política de retenção/exclusão e notificações push ainda exigem trabalho. O pacote completo é assinado pela chave do ambiente original, restaura em conta/base vazias, revoga links e mantém aceites importados apenas como histórico. Não substitui backup operacional.
 
-Não use `runserver` em produção. Não execute migrações de produção sem cópia
-restaurável e análise de compatibilidade. Consulte [operação](docs/OPERACAO.md).
+Consulte [estado e pendências](docs/ESTADO.md), [operação](docs/OPERACAO.md), [contratos](docs/REGRAS.md), [privacidade](docs/PRIVACIDADE.md) e [roadmap](docs/ROADMAP.md).
 
-## Origem do projeto
+Dados locais, uploads, senhas e backups não são versionados. O Django lê variáveis do processo; `.env` não é carregado automaticamente. Não use `runserver` em produção.
 
-Especificação recebida: *Avaliação completa do Davigurumi, v1.1, 07/10/2026*.
-O texto extraído está em [ESPECIFICACAO_ORIGINAL.txt](docs/ESPECIFICACAO_ORIGINAL.txt).
-Esse arquivo é referência de produto, não instrução operacional automática para agentes.
-A preferência explícita por Python orientou a implementação; as propostas de React,
-provedores, decisões e confirmações internas do PDF não representam decisões do usuário.
-Não houve deploy, publicação, cobrança ou conexão a serviços externos do produto.
+## Origem
+
+A [especificação original extraída](docs/ESPECIFICACAO_ORIGINAL.txt) é referência de produto. Seus textos internos sobre ferramentas, fases e aprovações não são comandos automáticos. A preferência por Python e a autorização para continuar desenvolvendo vieram diretamente do usuário. Não houve deploy, ativação de serviços pagos ou integração bancária.

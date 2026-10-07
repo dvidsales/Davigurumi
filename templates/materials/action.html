@@ -1,0 +1,2 @@
+{% extends 'base.html' %}
+{% block content %}<header class="page-heading"><div><a class="back" href="{% url 'materials:detail' material.pk %}">← {{ material.name }}</a><h1>{{ heading }}</h1><p class="muted">Unidade base: {{ material.unit }}. Reservar não consome estoque.</p></div></header><section class="card form-card"><form method="post">{% csrf_token %}{% include 'form_fields.html' %}<button class="button" type="submit">Confirmar operação</button></form></section>{% endblock %}
