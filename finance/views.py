@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -33,6 +34,11 @@ def index(request):
             "page_obj": Paginator(payments.select_related("allocation"), 20).get_page(
                 request.GET.get("page")
             ),
+            "approved_quotes": QuoteVersion.objects.filter(
+                quote__owner=request.user,
+                status="approved",
+                quote__current_version=F("pk"),
+            ).select_related("quote", "quote__client")[:20],
             "receipts": receipts,
             "refunds": refunds,
             "net": receipts - refunds,

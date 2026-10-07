@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db.models import F
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
 from datetime import timedelta
@@ -36,7 +37,16 @@ def index(request):
     return render(
         request,
         "production/index.html",
-        {"page_obj": Paginator(orders, 20).get_page(request.GET.get("page"))},
+        {
+            "page_obj": Paginator(orders, 20).get_page(request.GET.get("page")),
+            "approved_quotes": QuoteVersion.objects.filter(
+                quote__owner=request.user,
+                status="approved",
+                quote__current_version=F("pk"),
+            )
+            .exclude(quote__versions__initial_order__isnull=False)
+            .select_related("quote", "quote__client")[:20],
+        },
     )
 
 

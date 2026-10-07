@@ -77,3 +77,7 @@ O código desta continuidade foi enviado para revisão na branch `feat/privacy-a
 Chromium confirmou a jornada completa até aceite/pedido/quitação, 31 rotas a 360 px, principais a 768/1024 e zero violações WCAG automáticas. Verificação adicional confirmou cadastro integrado de cliente/fornecedor, pesquisa e histórico, orientação do orçamento vazio e exatamente uma opção ativa/aria-current nos menus pedidos, financeiro, dados, relatórios, demonstração e segurança. Conteúdo do pedido/caixa continua dependente de um orçamento com peças e aceite; não removemos essa regra.
 
 Capturas novas, com dados fictícios, em docs/images: materiais-feedback.png, compra-feedback.png e orcamento-feedback.png. Não houve publicação pública ou uso de dados reais.
+
+### Acesso após aceite do cliente
+
+Pedidos agora lista aprovações atuais ainda não convertidas; caixa oferece acesso às aprovações para registrar recebimento. Teste de regressão usa publicação e aceite reais pelo serviço, confirma conversão pela aba de produção, desaparecimento da lista pendente, preservação do acesso financeiro e isolamento entre contas. Aprovar não cria pedido nem pagamento automaticamente. Os 16 testes de usabilidade, produção e financeiro passaram no PostgreSQL e SQLite.

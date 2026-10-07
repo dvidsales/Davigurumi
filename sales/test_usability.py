@@ -131,3 +131,49 @@ class WorkflowFeedbackTests(TestCase):
             ).status_code,
             404,
         )
+
+    def test_link_approval_can_be_converted_from_production_tab(self):
+        import uuid
+        from decimal import Decimal
+        from projects.services import create_project
+        from sales.services import add_quote_item, publish, decide
+        from production.models import Order
+
+        project = create_project(
+            owner=self.owner,
+            name="Peça aprovada",
+            estimated_seconds=3600,
+            hourly_rate=Decimal("30"),
+        )
+        quote = create_quote(owner=self.owner)
+        version = quote.versions.get()
+        add_quote_item(
+            owner=self.owner, version_id=version.pk, project_id=project.pk, quantity=1
+        )
+        _, raw = publish(owner=self.owner, version_id=version.pk)
+        decide(raw=raw, action="approve", key=uuid.uuid4(), declaration=True)
+        self.assertIn(
+            version,
+            self.client.get(reverse("production:index")).context["approved_quotes"],
+        )
+        from finance.models import Payment
+
+        self.assertFalse(Order.objects.filter(owner=self.owner).exists())
+        self.assertFalse(Payment.objects.filter(owner=self.owner).exists())
+        self.client.force_login(self.other)
+        for path in ("production:index", "finance:index"):
+            self.assertEqual(
+                list(self.client.get(reverse(path)).context["approved_quotes"]), []
+            )
+        self.client.force_login(self.owner)
+        response = self.client.post(reverse("production:convert", args=[version.pk]))
+        order = Order.objects.get(owner=self.owner)
+        self.assertRedirects(response, reverse("production:detail", args=[order.pk]))
+        self.assertNotIn(
+            version,
+            self.client.get(reverse("production:index")).context["approved_quotes"],
+        )
+        self.assertIn(
+            version,
+            self.client.get(reverse("finance:index")).context["approved_quotes"],
+        )
