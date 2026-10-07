@@ -25,6 +25,7 @@ def create_project(
     fee=Decimal(0),
     notes="",
     reference_policy="available",
+    quick_entry=False,
 ):
     get_user_model().objects.select_for_update().get(pk=owner.pk)
     calculate_price(cost=Decimal(0), mode=mode, percentage=percentage, fee=fee)
@@ -43,6 +44,7 @@ def create_project(
         estimated_seconds=estimated_seconds,
         hourly_rate=hourly_rate,
         reference_policy=reference_policy,
+        quick_entry=quick_entry,
         additional_cost=additional_cost,
         mode=mode,
         percentage=percentage,
@@ -65,6 +67,7 @@ def clone_revision(project):
     values = {
         field: getattr(current, field)
         for field in (
+            "quick_entry",
             "name",
             "description",
             "technique",
@@ -224,6 +227,8 @@ def snapshot_project(*, owner, revision_id, quantity, choices=None):
     labor = seconds / Decimal(3600) * revision.hourly_rate
     additional = revision.additional_cost * factor
     cost = materials_cost + labor + additional
+    if revision.quick_entry and not lines and labor == 0 and additional == 0:
+        complete = False
     result = calculate_price(
         cost=cost, mode=revision.mode, percentage=revision.percentage, fee=revision.fee
     )

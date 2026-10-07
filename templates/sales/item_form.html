@@ -1,2 +1,13 @@
 {% extends 'base.html' %}
-{% block content %}<header class="page-heading"><h1>{{ heading }}</h1></header><section class="card form-card"><p>Escolha uma peça da sua biblioteca. A ficha fornece os materiais e o preço; a quantidade pertence a este orçamento.</p><ul>{% for project in projects %}<li><a href="?project={{ project.pk }}">{{ project.name }}</a></li>{% empty %}<li>Você ainda não tem uma peça cadastrada. <a class="button" href="{% url 'projects:create' %}?next_version={{ version.pk }}">Cadastrar primeira peça e voltar ao orçamento</a></li>{% endfor %}</ul><form method="post">{% csrf_token %}{% include 'form_fields.html' %}<button class="button">Adicionar item</button></form></section>{% endblock %}
+{% block content %}
+<header class="page-heading"><div><a href="{% url 'sales:detail' version.quote_id %}">← Voltar ao orçamento</a><h1>{{ heading }}</h1><p>Adicione uma nova peça aqui ou reutilize uma da biblioteca. Confira os dados sugeridos e edite se precisar.</p></div></header>
+<section class="card form-card"><form method="post" data-piece-form data-suggestion-base="{% url 'sales:piece_suggestion' '00000000-0000-0000-0000-000000000000' %}">{% csrf_token %}
+<p>Para uma peça nova, basta informar o nome, a quantidade e o preço total. Ela será salva na biblioteca junto com o item, sem sair do orçamento. Materiais e tempo podem ser completados depois.</p>
+{% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+{% for field in form %}{% if field.name != 'discount' and field.name != 'fixed_discount' %}{% if field.is_hidden %}{{ field }}{{ field.errors }}{% else %}<div class="field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endif %}{% endif %}{% endfor %}
+<details {% if form.discount.errors or form.fixed_discount.errors %}open{% endif %}><summary>Descontos (opcional)</summary><div class="field">{{ form.discount.label_tag }}{{ form.discount }}{{ form.discount.errors }}</div><div class="field">{{ form.fixed_discount.label_tag }}{{ form.fixed_discount }}{{ form.fixed_discount.errors }}</div></details>
+<p class="notice" data-piece-preview role="status">Ao selecionar uma peça, mostraremos o preço calculado pela ficha ou sugeriremos o último preço manual registrado. Custos ainda não preenchidos continuam desconhecidos.</p>
+<a data-piece-alternatives hidden href="?project={{ form.project.value|default:'' }}">Carregar alternativas de materiais desta peça</a>
+<p class="muted">Preço manual é o total final do item; quando informado, substitui o cálculo e os descontos. Versões publicadas permanecem preservadas.</p>
+<button class="button">{{ submit_label|default:'Adicionar peça ao orçamento' }}</button></form></section>
+{% endblock %}

@@ -47,3 +47,49 @@ if (navigation) {
     if(active) active.setAttribute('aria-current','page');
   }
 }
+
+const pieceForm = document.querySelector('[data-piece-form]');
+if (pieceForm) {
+  const project = pieceForm.querySelector('[name=project]');
+  const name = pieceForm.querySelector('[name=new_piece_name]');
+  const description = pieceForm.querySelector('[name=description]');
+  const manual = pieceForm.querySelector('[name=manual_price]');
+  const preview = pieceForm.querySelector('[data-piece-preview]');
+  const alternatives = pieceForm.querySelector('[data-piece-alternatives]');
+  let controller;
+  let manualEdited = Boolean(manual.value);
+  manual.addEventListener('input', () => { manualEdited = true; });
+  async function suggest(changedProject = false) {
+    if (controller) controller.abort();
+    name.closest('.field').hidden = Boolean(project.value) && !name.value;
+    if (!project.value) {
+      if (changedProject) { manual.value = ''; description.value = ''; manualEdited = false; }
+      alternatives.hidden = true;
+      preview.textContent = 'Informe o nome e o preço total da nova peça. A ficha de custos pode ser completada depois.';
+      return;
+    }
+    controller = new AbortController();
+    if (changedProject) { name.value = ''; name.closest('.field').hidden = true; manualEdited = false; }
+    const url = new URL(pieceForm.dataset.suggestionBase.replace('00000000-0000-0000-0000-000000000000', project.value), location.origin);
+    for (const field of pieceForm.elements) {
+      if (['quantity','discount','fixed_discount'].includes(field.name) || field.name.startsWith('alternative_')) url.searchParams.set(field.name, field.value || '0');
+    }
+    try {
+      const response = await fetch(url, {signal:controller.signal, headers:{'Accept':'application/json'}});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Não foi possível carregar a sugestão.');
+      if (changedProject || !description.value) description.value = data.description;
+      if (!manualEdited) manual.value = data.manual_price || data.calculated_price || '';
+      preview.textContent = data.complete ? `Preço calculado para esta quantidade: R$ ${data.calculated_price.replace('.', ',')}. Confira ou informe um preço manual.` : (data.manual_price ? 'Preço manual sugerido com base no último orçamento e na quantidade atual. Confira; os custos ainda estão incompletos.' : 'Custos ainda incompletos. Informe um preço manual total para este item.');
+      alternatives.hidden = !data.has_alternatives;
+      const link = new URL(location.href); link.searchParams.set('project', project.value); alternatives.href = link;
+    } catch (error) {
+      if (error.name !== 'AbortError') preview.textContent = error.message;
+    }
+  }
+  project.addEventListener('change', () => suggest(true));
+  for (const field of pieceForm.elements) {
+    if (['quantity','discount','fixed_discount'].includes(field.name) || field.name.startsWith('alternative_')) field.addEventListener('change', () => suggest());
+  }
+  suggest();
+}

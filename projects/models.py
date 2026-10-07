@@ -32,6 +32,7 @@ class ProjectRevision(models.Model):
     name = models.CharField(max_length=160)
     description = models.TextField(blank=True, max_length=2000)
     technique = models.CharField(max_length=100, blank=True)
+    quick_entry = models.BooleanField(default=False)
     base_quantity = models.PositiveIntegerField(default=1)
     estimated_seconds = models.PositiveIntegerField(default=0)
     reference_policy = models.CharField(

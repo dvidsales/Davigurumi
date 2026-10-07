@@ -49,9 +49,17 @@ class QuoteForm(forms.Form):
 
 
 class QuoteItemForm(forms.Form):
-    project = forms.ModelChoiceField(label="Projeto", queryset=Project.objects.none())
+    project = forms.ModelChoiceField(
+        label="Peça da biblioteca (opcional)",
+        queryset=Project.objects.none(),
+        required=False,
+        empty_label="Nova peça — informe o nome abaixo",
+    )
+    new_piece_name = forms.CharField(
+        label="Nome da nova peça", max_length=160, required=False
+    )
     quantity = forms.IntegerField(
-        label="Quantidade de unidades produzidas",
+        label="Quantidade de peças no orçamento",
         min_value=1,
         max_value=10000,
         initial=1,
@@ -60,7 +68,7 @@ class QuoteItemForm(forms.Form):
         label="Descrição para o cliente (opcional)", max_length=300, required=False
     )
     manual_price = forms.DecimalField(
-        label="Preço total manual deste item (R$), opcional",
+        label="Preço total do item (R$), opcional para peças com ficha completa",
         min_value=0,
         max_digits=12,
         decimal_places=2,
@@ -95,6 +103,11 @@ class QuoteItemForm(forms.Form):
             )
         except ValueError:
             selected = None
+        if selected and not self.is_bound:
+            if "description" not in self.initial:
+                self.initial["description"] = (
+                    selected.current_revision.description or selected.name
+                )[:300]
         if selected:
             self.fields["project"].initial = selected.pk
             for line in selected.current_revision.materials.select_related("material"):
@@ -109,6 +122,25 @@ class QuoteItemForm(forms.Form):
                         lambda obj: f"{obj.material.name}: {obj.base_quantity} {obj.material.unit}"
                     )
                     self.fields["alternative_" + str(line.pk)] = field
+
+    def clean(self):
+        data = super().clean()
+        if data.get("project") and data.get("new_piece_name"):
+            self.add_error(
+                "new_piece_name", "Escolha uma peça existente ou informe uma nova."
+            )
+        elif not data.get("project"):
+            if not data.get("new_piece_name"):
+                self.add_error(
+                    "new_piece_name",
+                    "Informe o nome da peça ou escolha uma da biblioteca.",
+                )
+            if data.get("manual_price") is None:
+                self.add_error(
+                    "manual_price",
+                    "Informe o preço total desta nova peça; a ficha pode ser completada depois.",
+                )
+        return data
 
 
 class PublishForm(forms.Form):
