@@ -1,6 +1,6 @@
 # Estado para continuidade — 07/10/2026
 
-Repositório `/workspace/Davigurumi`, branch `feat/materials-purchasing-reports`. Os PRs #1 e [#2](https://github.com/dvidsales/Davigurumi/pull/2) já foram incorporados à `main`; esta evolução parte de `origin/main` em `9d4ca2e` e reúne rateio manual, relatórios filtrados XLSX e atributos/mínimo de materiais. Não fazer reset, apagar `.local/` ou recriar o projeto. Usuário autorizou desenvolvimento autônomo e PR; não autorizou deploy, serviços pagos, merge ou uso de dados reais.
+Repositório `/workspace/Davigurumi`, branch `feat/materials-purchasing-reports`. Os PRs #1 e [#2](https://github.com/dvidsales/Davigurumi/pull/2) já foram incorporados à `main`; esta evolução parte de `origin/main` em `9d4ca2e` e reúne rateio manual, relatórios filtrados XLSX e atributos/mínimo de materiais no [PR #3](https://github.com/dvidsales/Davigurumi/pull/3), aberto para revisão. Não fazer reset, apagar `.local/` ou recriar o projeto. Usuário autorizou desenvolvimento autônomo e PR; não autorizou deploy, serviços pagos, merge ou uso de dados reais.
 
 O app evoluiu de contas/materiais/calculadora para os módulos documentados no README. PostgreSQL 17 foi iniciado e validado em Docker. SQLite anterior continua disponível e recebeu migrações compatíveis. Ambos são bancos diferentes.
 
@@ -31,4 +31,4 @@ Bancos `davigurumi_browser_features_20261007`, `davigurumi_browser_20261007` e `
 
 Servidor/processos não são garantidos após restauração do ambiente. Inicie novamente e confira `/conta/entrar/`. Configuração de onboarding precisa ser salva/publicada pelo usuário para ativar alterações do rascunho. O conteúdo da nova branch precisa estar presente no checkout: `main` já contém os módulos do PR #2; as melhorias desta continuidade exigem incorporar o próximo PR ou selecionar sua branch.
 
-GitHub: API disponível; o PR #1 aparece como incorporado. O envio Git inicial da nova branch retornou erro interno e o mesmo commit/tree foi publicado via API; atualizações Git posteriores funcionaram. PR #2 incorporado; o próximo PR deve usar esta branch e as evidências atualizadas em VALIDACAO. Não imprimir tokens nem pedir credenciais pelo chat.
+GitHub: API disponível; o PR #1 aparece como incorporado. O envio Git inicial da nova branch retornou erro interno e o mesmo commit/tree foi publicado via API; atualizações Git posteriores funcionaram. PR #2 incorporado; PR #3 aberto nesta branch; evidências atualizadas em VALIDACAO. Não imprimir tokens nem pedir credenciais pelo chat.
