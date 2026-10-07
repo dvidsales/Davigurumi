@@ -19,9 +19,24 @@ from .pdf import generate_pdf
 
 
 @transaction.atomic
-def create_quote(*, owner, client_id=None, terms="", delivery_date=None, valid_days=15):
+def create_quote(
+    *,
+    owner,
+    client_id=None,
+    client_name="",
+    client_contact="",
+    terms="",
+    delivery_date=None,
+    valid_days=15,
+):
     get_user_model().objects.select_for_update().get(pk=owner.pk)
+    if client_id and client_name:
+        raise ValidationError("Escolha um cliente existente ou cadastre um novo.")
     client = get_object_or_404(Client, pk=client_id, owner=owner) if client_id else None
+    if client_name:
+        from accounts.partners import register_contact
+
+        client = register_contact(Client, owner, client_name, client_contact)
     if not 1 <= valid_days <= 365:
         raise ValidationError("Validade deve ficar entre 1 e 365 dias.")
     number = (

@@ -1,5 +1,5 @@
 "use strict";
-const PUBLIC_CACHE = "davigurumi-public-v2";
+const PUBLIC_CACHE = "davigurumi-public-v3";
 const ASSETS = ["/static/css/app.css", "/static/js/app.js", "/static/icons/icon-192.png", "/static/icons/icon-512.png"];
 self.addEventListener("install", event => event.waitUntil(caches.open(PUBLIC_CACHE).then(cache => cache.addAll(ASSETS))));
 // No skipWaiting: updating the worker must not reload an unsaved form.

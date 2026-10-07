@@ -69,3 +69,11 @@ Carga HTTP pequena, autenticada e sintética: 48 leituras, 4 simultâneas, p50 7
 `check_readiness` identifica corretamente configuração de desenvolvimento como não pronta para abertura. Segredos/registro independente, hospedagem, SMTP, TLS/usuário de banco restrito e backup externo continuam dependentes da operação escolhida. A política de retenção necessita aprovação real; testes não estabelecem prazo legal. Roteiro de dispositivos em [TESTES_DISPOSITIVOS](TESTES_DISPOSITIVOS.md).
 
 O código desta continuidade foi enviado para revisão na branch `feat/privacy-and-local-testing`, após autorização do usuário. Nenhum deploy ou merge desta continuidade foi realizado.
+
+## Feedback de interface
+
+164 testes PostgreSQL passaram; SQLite executou 164 com 5 exclusivos ignorados. Novos contratos: cadastro de cliente no orçamento e fornecedor na compra, rollback em dados inválidos, duplicata explícita, busca por ID e autorização dos históricos, orientação da publicação vazia e retorno da biblioteca ao orçamento.
+
+Chromium confirmou a jornada completa até aceite/pedido/quitação, 31 rotas a 360 px, principais a 768/1024 e zero violações WCAG automáticas. Verificação adicional confirmou cadastro integrado de cliente/fornecedor, pesquisa e histórico, orientação do orçamento vazio e exatamente uma opção ativa/aria-current nos menus pedidos, financeiro, dados, relatórios, demonstração e segurança. Conteúdo do pedido/caixa continua dependente de um orçamento com peças e aceite; não removemos essa regra.
+
+Capturas novas, com dados fictícios, em docs/images: materiais-feedback.png, compra-feedback.png e orcamento-feedback.png. Não houve publicação pública ou uso de dados reais.

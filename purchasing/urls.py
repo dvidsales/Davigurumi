@@ -7,6 +7,7 @@ urlpatterns = [
     path("", views.index, name="index"),
     path("nova/", views.create, name="create"),
     path("fornecedores/", views.suppliers, name="suppliers"),
+    path("fornecedores/<uuid:pk>/", views.supplier_history, name="supplier_history"),
     path("<uuid:pk>/", views.detail, name="detail"),
     path("<uuid:pk>/editar/", views.edit, name="edit"),
     path("<uuid:pk>/item/", views.item, name="item"),

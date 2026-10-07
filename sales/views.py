@@ -29,6 +29,7 @@ from .forms import (
     PortalForm,
     ImageForm,
 )
+from accounts.partners import search_contacts
 from . import services
 
 
@@ -51,11 +52,18 @@ def clients(request):
             return redirect("sales:clients")
     return render(
         request,
-        "sales/clients.html",
+        "contact_directory.html",
         {
             "form": form,
+            "heading": "Pesquisar clientes",
+            "kind": "client",
+            "query": request.GET.get("q", ""),
+            "create_url": reverse("sales:create"),
             "page_obj": Paginator(
-                Client.objects.filter(owner=request.user), 20
+                __import__(
+                    "accounts.partners", fromlist=["search_contacts"]
+                ).search_contacts(Client, request.user, request.GET.get("q", "")),
+                20,
             ).get_page(request.GET.get("page")),
         },
     )
@@ -81,13 +89,19 @@ def index(request):
 @never_cache
 @login_required
 def create(request):
-    form = QuoteForm(request.POST or None, owner=request.user)
+    form = QuoteForm(
+        request.POST or None,
+        owner=request.user,
+        contact_query=request.GET.get("contact_q", ""),
+    )
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
         try:
             quote = services.create_quote(
                 owner=request.user,
                 client_id=data["client"].pk if data["client"] else None,
+                client_name=data["new_client_name"],
+                client_contact=data["new_client_contact"],
                 terms=data["terms"],
                 delivery_date=data["delivery_date"],
                 valid_days=data["valid_days"],
@@ -98,11 +112,17 @@ def create(request):
             return redirect("sales:detail", pk=quote.pk)
     return render(
         request,
-        "generic_form.html",
+        "contact_workflow.html",
         {
             "form": form,
+            "contact_field": form["client"],
+            "new_name": form["new_client_name"],
+            "new_contact": form["new_client_contact"],
+            "contact_title": "Cliente",
+            "contact_query": request.GET.get("contact_q", ""),
+            "directory_url": reverse("sales:clients"),
             "heading": "Novo orçamento",
-            "description": "Adicione projetos e publique somente após revisar a prévia do cliente.",
+            "description": "Cadastre ou escolha o cliente; depois adicione as peças, confira o preço e revise a prévia.",
         },
     )
 
@@ -265,7 +285,21 @@ def edit_version(request, pk):
 @login_required
 def publish(request, pk):
     version = get_object_or_404(QuoteVersion, pk=pk, quote__owner=request.user)
+    if not version.items.exists():
+        messages.info(
+            request, "Adicione uma peça ao orçamento antes de revisar e publicar."
+        )
+        return redirect("sales:item", pk=version.pk)
     form = PublishForm(request.POST or None)
+    items = list(version.items.all())
+    if all(item.snapshot.get("complete", False) for item in items):
+        form.fields.pop("confirm_limitations")
+    if all(
+        item.total * (1 - Decimal(item.snapshot["fee"]))
+        >= Decimal(item.snapshot["cost"])
+        for item in items
+    ):
+        form.fields.pop("confirm_below_cost")
     if request.method == "POST" and form.is_valid():
         try:
             published, raw = services.publish(
@@ -540,3 +574,22 @@ def compare(request, pk):
             != (after.terms, after.delivery_date, after.valid_days),
         )
     return render(request, "sales/compare.html", context)
+
+
+@never_cache
+@login_required
+def client_history(request, pk):
+    contact = get_object_or_404(Client, pk=pk, owner=request.user)
+    quotes = Quote.objects.filter(owner=request.user, client=contact).select_related(
+        "current_version"
+    )
+    from production.models import Order
+
+    orders = Order.objects.filter(
+        owner=request.user, approved_version__quote__client=contact
+    ).select_related("approved_version__quote")
+    return render(
+        request,
+        "contact_history.html",
+        {"contact": contact, "kind": "client", "quotes": quotes, "orders": orders},
+    )

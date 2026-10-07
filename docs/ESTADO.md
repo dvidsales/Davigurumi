@@ -44,3 +44,7 @@ Exclusão integral administrativa com prévia, tombstones externos assinados, bl
 160 testes PostgreSQL passaram; SQLite 155 passaram/5 exclusivos ignorados. Chromium: 31 telas de 360 px e telas principais em 768/1024, zero violações WCAG automáticas; carga sintética de 48 leituras/4 simultâneas, zero falhas. Auditorias sem vulnerabilidades conhecidas/achados médios ou altos. Nenhuma migração nova nesta continuidade.
 
 Base sintética adicional `davigurumi_browser_essentials_20261007`, arquivos `.local/browser_essentials_files`, servidor local de teste 127.0.0.1:8104 (reiniciar após restauração). Roteiro de homologação em TESTES_DISPOSITIVOS: computador e celular; tablet se fizer parte da rotina. `check_readiness` retorna false neste ambiente de desenvolvimento; não é produção nem autoriza abertura pública.
+
+## Feedback do usuário
+
+Branch `feat/usability-feedback`: navegação ativa incluindo relatórios/demo/segurança; filtros integrados; cadastro de contatos dentro da compra/orçamento com busca/ID/histórico; biblioteca de peças com pedidos relacionados; orçamento em etapas, publicação vazia guiada e confirmações exibidas somente quando pertinentes. 164 testes PG; SQLite 159/5 ignorados; navegador e WCAG automáticos passaram. Não alterar ou apagar bases do usuário para aplicar esta versão.
