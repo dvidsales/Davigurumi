@@ -14,7 +14,7 @@ Alterar referência atual não reescreve custos históricos. Estoque negativo é
 
 ## Compras e fichas
 
-Rascunho não movimenta estoque. Frete e desconto são rateados em centavos pelo maior resto, com desempate determinístico. Itens de valor total zero com encargos exigem rateio manual; a versão atual rejeita essa situação e ainda não oferece o formulário de rateio manual. Cada recebimento parcial cria suas próprias camadas. Cancelar o restante conserva recebimentos. Repetir compra cria rascunho novo e editável.
+Rascunho não movimenta estoque. Frete e desconto são rateados em centavos pelo maior resto, com desempate determinístico. O formulário permite rateio manual: o custo final de cada item inclui sua parte de frete/desconto, tem até duas casas decimais e a soma deve fechar exatamente o total da compra. Isso permite confirmar itens com preço zero e encargos. A confirmação preserva o método e os custos; repetir o mesmo rateio é idempotente e mudar valores já confirmados é rejeitado. Cada recebimento parcial cria suas próprias camadas. Cancelar o restante conserva recebimentos. Repetir compra cria rascunho novo e editável.
 
 Ficha calcula para uma quantidade-base. Alterações criam revisão; alternativas são escolhidas por item de orçamento, sem substituição automática. Escalas que produzam fração de material indivisível são rejeitadas.
 
@@ -45,3 +45,10 @@ CSV/XLSX importam novos materiais, não atualizam silenciosamente cadastros. Pr�
 Pacote relacional é autenticado pela chave do ambiente original, exige conta/base sem colisões e armazenamento vazio, inclui arquivos por hash e não inclui senhas/sessões. Não mescla bases. Links são revogados e aceites importados não autorizam novos pedidos, enquanto pedidos já existentes são preservados.
 
 Demonstração usa proprietário separado, mantendo autenticação da conta real. Cópia requer senha e seleção; projetos trazem seus materiais, com estoque/custos/horas/preços zerados, sem pagamentos ou clientes fictícios.
+
+
+## Estoque mínimo e relatórios
+
+Composição, espessura e agulha recomendada são descrições opcionais; não alteram conversões ou custo. O mínimo é informado na unidade base e deve ser inteiro para materiais em unidades. Mínimo zero desativa o aviso. A visão geral e os relatórios comparam o mínimo com o estoque disponível, após reservas; alertas gerados pelo comando são deduplicados por material/dia e proprietário. Não há agendador automático embutido.
+
+Cliente, projeto e estado de produção filtram os pedidos criados no período. O filtro de projeto consulta os itens da versão comercial atual, preservando uma linha por pedido mesmo quando há vários itens desse projeto. O caixa permanece global da conta por data efetiva de recebimento/reembolso. CSV e XLSX usam as mesmas linhas, neutralizam nomes com aparência de fórmula e mostram total/saldo/crédito atuais, não um saldo histórico reconstruído. XLSX inclui valores monetários numéricos com duas casas de exibição.

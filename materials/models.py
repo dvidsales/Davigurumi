@@ -30,6 +30,16 @@ class Material(models.Model):
     tex = models.DecimalField(
         "Tex (somente fios)", max_digits=12, decimal_places=3, null=True, blank=True
     )
+    composition = models.CharField("Composição", max_length=160, blank=True)
+    thickness = models.CharField(
+        "Espessura / título comercial", max_length=100, blank=True
+    )
+    recommended_hook = models.CharField(
+        "Agulha recomendada", max_length=100, blank=True
+    )
+    minimum_stock = models.DecimalField(
+        "Estoque mínimo disponível", max_digits=12, decimal_places=6, default=0
+    )
     notes = models.TextField("Observações internas", blank=True, max_length=2000)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -37,6 +47,10 @@ class Material(models.Model):
         ordering = ["name", "id"]
         indexes = [models.Index(fields=["owner", "name"])]
         constraints = [
+            models.CheckConstraint(
+                condition=models.Q(minimum_stock__gte=0),
+                name="material_minimum_stock_nonnegative",
+            ),
             models.CheckConstraint(
                 condition=models.Q(tex__isnull=True) | models.Q(tex__gt=0),
                 name="material_positive_tex",

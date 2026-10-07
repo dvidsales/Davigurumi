@@ -3,6 +3,7 @@ from . import views
 
 app_name = "purchasing"
 urlpatterns = [
+    path("<uuid:pk>/rateio/", views.allocation, name="allocation"),
     path("", views.index, name="index"),
     path("nova/", views.create, name="create"),
     path("fornecedores/", views.suppliers, name="suppliers"),

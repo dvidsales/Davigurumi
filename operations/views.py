@@ -49,15 +49,24 @@ def read(request, pk):
 def reports(request):
     from django.utils import timezone
     from production.models import Order
-    from .reporting import PeriodForm, cash_period, replenishment
+    from .reporting import (
+        PeriodForm,
+        cash_period,
+        replenishment,
+        export_order_report,
+        below_minimum,
+    )
 
     today = timezone.localdate()
-    data = request.GET or {
-        "start": today.replace(day=1).isoformat(),
-        "end": today.isoformat(),
+    data = request.GET.copy()
+    data.setdefault("start", today.replace(day=1).isoformat())
+    data.setdefault("end", today.isoformat())
+    form = PeriodForm(data, owner=request.user)
+    context = {
+        "form": form,
+        "shortages": replenishment(request.user),
+        "below_minimum": below_minimum(request.user),
     }
-    form = PeriodForm(data)
-    context = {"form": form, "shortages": replenishment(request.user)}
     if form.is_valid():
         start = form.cleaned_data["start"]
         end = form.cleaned_data["end"]
@@ -68,44 +77,19 @@ def reports(request):
             .select_related("current_version", "approved_version__quote__client")
             .prefetch_related("allocations__refunds")
         )
-        context.update(cash=cash_period(request.user, start, end), orders=orders)
-        if request.GET.get("export") == "csv":
-            import csv
-            from io import StringIO
-            from portability.tables import safe_cell
-            from portability.views import download
-
-            output = StringIO()
-            writer = csv.writer(output, delimiter=";")
-            writer.writerow(
-                [
-                    "pedido",
-                    "cliente",
-                    "criacao",
-                    "producao",
-                    "entrega",
-                    "total_atual",
-                    "recebido_liquido_historico",
-                    "saldo_atual",
-                    "credito_atual",
+        if form.cleaned_data["status"]:
+            orders = orders.filter(status=form.cleaned_data["status"])
+        if form.cleaned_data["client"]:
+            orders = orders.filter(
+                approved_version__quote__client=form.cleaned_data["client"]
+            )
+        if form.cleaned_data["project"]:
+            orders = orders.filter(
+                current_version__items__project_revision__project=form.cleaned_data[
+                    "project"
                 ]
-            )
-            for order in orders:
-                client = order.approved_version.quote.client
-                writer.writerow(
-                    [
-                        str(order.pk),
-                        safe_cell(client.name) if client else "",
-                        order.created_at.isoformat(),
-                        order.get_status_display(),
-                        order.get_delivery_status_display(),
-                        str(order.total),
-                        str(order.net_received),
-                        str(order.balance),
-                        str(order.credit),
-                    ]
-                )
-            return download(
-                "\ufeff" + output.getvalue(), "text/csv; charset=utf-8", "pedidos.csv"
-            )
+            ).distinct()
+        context.update(cash=cash_period(request.user, start, end), orders=orders)
+        if request.GET.get("export") in {"csv", "xlsx"}:
+            return export_order_report(orders, request.GET["export"])
     return render(request, "operations/reports.html", context)

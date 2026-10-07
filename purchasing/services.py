@@ -67,12 +67,21 @@ def add_item(
 
 
 @transaction.atomic
-def confirm_purchase(*, owner, purchase_id):
+def confirm_purchase(*, owner, purchase_id, manual_allocations=None):
     get_user_model().objects.select_for_update().get(pk=owner.pk)
     purchase = get_object_or_404(
         Purchase.objects.select_for_update(), pk=purchase_id, owner=owner
     )
     if purchase.status in {"confirmed", "partial", "received"}:
+        if manual_allocations is not None:
+            supplied = {str(pk): value for pk, value in manual_allocations.items()}
+            stored = {
+                str(item.pk): item.allocated_cost for item in purchase.items.all()
+            }
+            if supplied != stored or purchase.allocation_mode != "manual":
+                raise ValidationError(
+                    "O rateio já foi confirmado e não pode ser substituído."
+                )
         return purchase
     if purchase.status != "draft":
         raise ValidationError("Esta compra não pode ser confirmada.")
@@ -84,13 +93,42 @@ def confirm_purchase(*, owner, purchase_id):
     weights = [item.net_total for item in items]
     if purchase.discount > sum(weights, Decimal(0)):
         raise ValidationError("Desconto não pode superar o valor dos itens.")
-    freight = distribute(purchase.freight, weights)
-    discount = distribute(purchase.discount, weights)
-    for item, f, d in zip(items, freight, discount):
-        item.allocated_cost = item.net_total + f - d
+    if manual_allocations is not None:
+        costs = {str(pk): value for pk, value in manual_allocations.items()}
+        if set(costs) != {str(item.pk) for item in items}:
+            raise ValidationError(
+                "Informe o custo final de todos os itens desta compra, sem itens de outra compra."
+            )
+        if any(
+            not isinstance(value, Decimal)
+            or not value.is_finite()
+            or value < 0
+            or value > Decimal("9999999999.99")
+            or value != value.quantize(CENT)
+            for value in costs.values()
+        ):
+            raise ValidationError(
+                "Custos finais devem ser valores não negativos, com até duas casas decimais."
+            )
+        if sum(costs.values(), Decimal(0)) != purchase.total:
+            raise ValidationError(
+                "A soma dos custos finais precisa ser exatamente o total da compra, incluindo frete e desconto."
+            )
+        purchase.allocation_mode = "manual"
+    else:
+        freight = distribute(purchase.freight, weights)
+        discount = distribute(purchase.discount, weights)
+        costs = {
+            str(item.pk): item.net_total + f - d
+            for item, f, d in zip(items, freight, discount)
+        }
+        purchase.allocation_mode = "auto"
+    for item in items:
+        item.allocated_cost = costs[str(item.pk)]
+        item.full_clean()
         item.save(update_fields=["allocated_cost"])
     purchase.status = "confirmed"
-    purchase.save(update_fields=["status"])
+    purchase.save(update_fields=["status", "allocation_mode"])
     return purchase
 
 
