@@ -6,7 +6,8 @@ const base=process.env.DAVIGURUMI_SMOKE_URL||'http://127.0.0.1:8100';
 if(process.env.DAVIGURUMI_SMOKE_ISOLATED!=='1')throw new Error('Set DAVIGURUMI_SMOKE_ISOLATED=1 only for a disposable test database.');
 (async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
- const errors=[];const failures=[];
+ const errors=[];const failures=[];const accessibility=[];
+ const axeSource=process.env.DAVIGURUMI_AXE_PATH?require("node:fs").readFileSync(process.env.DAVIGURUMI_AXE_PATH,"utf8"):null;
  const context=await browser.newContext({viewport:{width:1440,height:1000}});const page=await context.newPage();
  page.on('pageerror',error=>errors.push(error.message));page.on('response',response=>{if(response.status()>=500)failures.push(response.status());});
  const username='browser_'+Date.now();const password='Browser-Synthetic-Password-89!';
@@ -59,7 +60,13 @@ if(process.env.DAVIGURUMI_SMOKE_ISOLATED!=='1')throw new Error('Set DAVIGURUMI_S
   await go('/notificacoes/relatorios/');await page.locator('#id_project').selectOption(projectId);await page.locator('#id_status').selectOption('completed');const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Exportar pedidos XLSX'}).click();const report=await downloaded;assert.equal(report.suggestedFilename(),'pedidos.xlsx');await report.saveAs('/tmp/davigurumi-browser-orders.xlsx');
   const routes=['/','/materiais/','/materiais/novo/',materialPath,'/precificacao/','/compras/','/compras/nova/','/compras/fornecedores/','/projetos/',projectPath,'/projetos/'+projectId+'/editar/','/clientes/','/orcamentos/',quotePath,'/pedidos/',orderPath,'/financeiro/','/notificacoes/','/notificacoes/relatorios/','/dados/','/dados/completo/','/demo/',materialPath+'editar/',purchasePath,expensePath,recoverPath,'/pedidos/calendario/',comparePath,'/notificacoes/relatorios/materiais/','/conta/seguranca/','/conta/senha/'];
   await page.setViewportSize({width:1440,height:1000});await go('/');await page.screenshot({path:'/tmp/davigurumi-desktop.png',fullPage:true});await page.setViewportSize({width:360,height:800});
-  for(const route of routes){await go(route);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false,'mobile overflow '+route);}
+  for(const route of routes){
+   await go(route);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false,'mobile overflow '+route);
+   if(axeSource){await page.evaluate(axeSource);const result=await page.evaluate(async()=>{const result=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});return result.violations.map(v=>({id:v.id,impact:v.impact,targets:v.nodes.map(n=>n.target)}));});accessibility.push({route,violations:result});}
+  }
+  for(const width of [768,1024]){await page.setViewportSize({width,height:1024});for(const route of ['/',materialPath,orderPath,'/dados/','/notificacoes/relatorios/']){await go(route);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false,'tablet overflow '+route);}}
+  await page.setViewportSize({width:360,height:800});
+  if(axeSource){require('node:fs').writeFileSync('/tmp/davigurumi-accessibility.json',JSON.stringify(accessibility,null,2));assert.equal(accessibility.reduce((total,row)=>total+row.violations.length,0),0,'WCAG automated violations; inspect /tmp/davigurumi-accessibility.json');}
   await go('/');await page.screenshot({path:'/tmp/davigurumi-mobile.png',fullPage:true});
   // Service worker cache must contain only the explicit static allowlist, no private response.
   await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
@@ -71,7 +78,13 @@ if(process.env.DAVIGURUMI_SMOKE_ISOLATED!=='1')throw new Error('Set DAVIGURUMI_S
   await go('/materiais/');assert((await page.locator('main').innerText()).includes('Fio de demonstração'));assert(!(await page.locator('main').innerText()).includes('Fio visual privado'));
   await go('/demo/');await page.getByRole('button',{name:'Voltar à conta real'}).click();await page.waitForURL(base+'/');assert(!(await page.locator('main').innerText()).includes('DEMONSTRAÇÃO'));
   await go('/materiais/');assert((await page.locator('main').innerText()).includes('Fio visual privado'));
+  let load=null;
+  if(process.env.DAVIGURUMI_SMOKE_LOAD==='1'){
+   const pending=Array.from({length:48},(_,i)=>['/','/materiais/','/projetos/','/orcamentos/','/pedidos/','/notificacoes/relatorios/'][i%6]);const times=[];let cursor=0;
+   await Promise.all(Array.from({length:4},async()=>{while(cursor<pending.length){const route=pending[cursor++];const started=performance.now();const response=await context.request.get(base+route);assert.equal(response.status(),200,'isolated load '+route);times.push(performance.now()-started);await response.dispose();}}));
+   times.sort((a,b)=>a-b);load={requests:times.length,concurrency:4,p50Milliseconds:Math.round(times[Math.floor(times.length*.5)]),p95Milliseconds:Math.round(times[Math.floor(times.length*.95)]),failures:0};
+  }
   assert.deepEqual(errors,[]);assert.deepEqual(failures,[]);
-  console.log(JSON.stringify({signup:true,quoteApproval:true,depositTransferredOnce:20,orderTotal:63,remainingPayment:43,stockAfterConsumption:458,productionCompleted:true,delivered:true,paid:true,importPreviewAndConfirmation:true,manualPurchaseAllocation:true,expenseAndReversal:true,stockAfterRecovery:468,archiveAndRestore:true,calendar:true,versionComparison:true,xlsxFilteredReport:true,minimumStockVisible:true,materialTechnicalMetadata:true,ownerIsolation:true,staticOnlyCache:true,offlineBanner:true,demoIsolationAndSwitch:true,mobileWidth:360,routesWithoutOverflow:routes.length,browserErrors:errors}));
+  console.log(JSON.stringify({signup:true,quoteApproval:true,depositTransferredOnce:20,orderTotal:63,remainingPayment:43,stockAfterConsumption:458,productionCompleted:true,delivered:true,paid:true,importPreviewAndConfirmation:true,manualPurchaseAllocation:true,expenseAndReversal:true,stockAfterRecovery:468,archiveAndRestore:true,calendar:true,versionComparison:true,xlsxFilteredReport:true,minimumStockVisible:true,materialTechnicalMetadata:true,ownerIsolation:true,staticOnlyCache:true,offlineBanner:true,demoIsolationAndSwitch:true,mobileWidth:360,routesWithoutOverflow:routes.length,browserErrors:errors,tabletWidths:[768,1024],load,accessibilityViolations:accessibility.reduce((total,row)=>total+row.violations.length,0)}));
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});

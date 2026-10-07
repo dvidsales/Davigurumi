@@ -39,10 +39,16 @@ def clients(request):
     if request.method == "POST" and form.is_valid():
         client = form.save(commit=False)
         client.owner = request.user
-        with transaction.atomic():
-            get_user_model().objects.select_for_update().get(pk=request.user.pk)
-            client.save()
-        return redirect("sales:clients")
+        try:
+            with transaction.atomic():
+                from accounts.quotas import ensure_capacity
+
+                ensure_capacity(request.user, "sales.client")
+                client.save()
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            return redirect("sales:clients")
     return render(
         request,
         "sales/clients.html",
@@ -78,14 +84,18 @@ def create(request):
     form = QuoteForm(request.POST or None, owner=request.user)
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
-        quote = services.create_quote(
-            owner=request.user,
-            client_id=data["client"].pk if data["client"] else None,
-            terms=data["terms"],
-            delivery_date=data["delivery_date"],
-            valid_days=data["valid_days"],
-        )
-        return redirect("sales:detail", pk=quote.pk)
+        try:
+            quote = services.create_quote(
+                owner=request.user,
+                client_id=data["client"].pk if data["client"] else None,
+                terms=data["terms"],
+                delivery_date=data["delivery_date"],
+                valid_days=data["valid_days"],
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            return redirect("sales:detail", pk=quote.pk)
     return render(
         request,
         "generic_form.html",

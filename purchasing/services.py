@@ -210,6 +210,9 @@ def cancel_purchase(*, owner, purchase_id):
 
 @transaction.atomic
 def repeat_purchase(*, owner, purchase_id, date):
+    from accounts.quotas import ensure_capacity
+
+    ensure_capacity(owner, "purchasing.purchase")
     original = get_object_or_404(Purchase, pk=purchase_id, owner=owner)
     new = Purchase.objects.create(
         owner=owner,

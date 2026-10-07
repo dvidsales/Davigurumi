@@ -9,7 +9,7 @@ def cost_summary(order):
     estimate = materials = reserved = labor = Decimal(0)
     estimate_complete = materials_complete = reserved_complete = True
     for item in order.items.prefetch_related(
-        "consumptions__movement", "sessions__corrections"
+        "consumptions__movement__compensations", "sessions__corrections"
     ):
         if not item.retired:
             estimate += Decimal(item.snapshot.get("cost", "0"))

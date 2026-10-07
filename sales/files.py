@@ -75,6 +75,9 @@ def attach_image(*, owner, version_id, upload, label, is_public=False):
     if version.images.count() >= settings.MAX_IMAGES_PER_QUOTE:
         raise ValidationError("Limite de imagens desta versão atingido.")
     data, extension, width, height = normalized_image(upload)
+    from accounts.quotas import ensure_storage
+
+    ensure_storage(owner, len(data))
     asset = FileAsset(
         owner=owner,
         label=label,

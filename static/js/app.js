@@ -3,6 +3,7 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
   navigator.serviceWorker.register("/service-worker.js").catch(() => {});
 }
 const connectionStatus = document.getElementById("connection-status");
+const originalDisabledState = new WeakMap();
 function updateConnectivity() {
   if (connectionStatus) {
     connectionStatus.hidden = navigator.onLine;
@@ -10,7 +11,10 @@ function updateConnectivity() {
   }
   for (const form of document.forms) {
     if ((form.getAttribute("method") || "get").toLowerCase() === "post") {
-      for (const button of form.querySelectorAll("button[type=submit],button:not([type]),input[type=submit]")) button.disabled = !navigator.onLine;
+      for (const button of form.querySelectorAll("button[type=submit],button:not([type]),input[type=submit]")) {
+        if (!originalDisabledState.has(button)) originalDisabledState.set(button, button.disabled);
+        button.disabled = !navigator.onLine || originalDisabledState.get(button);
+      }
     }
   }
 }

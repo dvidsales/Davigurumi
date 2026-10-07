@@ -55,3 +55,17 @@ SMTP testado com backend em memória/falha simulada, sem e-mail externo real. O 
 `pip-audit` não encontrou vulnerabilidades conhecidas nas dependências fixadas. Bandit não encontrou alertas médios ou altos; alertas baixos foram revisados. `check`, verificação de migrações e `pip check` passaram. `check --deploy` com configuração sintética aponta apenas inclusão de subdomínios e preload de HSTS, decisões pendentes do domínio real. Isso não comprova ausência de vulnerabilidades; veja [SECURITY.md](../SECURITY.md).
 
 Jornada ampliada no Chromium confirmou despesa de R$5 e reversão, recuperação física de 10 g (estoque 468), arquivamento/reativação, calendário e comparação. Novo backup `davigurumi-security-20261007` restaurado em `davigurumi_restore_security_20261007`, com objetos privados conferidos por hash e estoque reconciliado sem divergências. A base original foi preservada.
+
+## Continuidade essencial — validação local
+
+Resultado final: **160 testes passaram no PostgreSQL; 155 passaram no SQLite e 5 foram ignorados**. Novos contratos cobrem exclusão completa/arquivo órfão, preservação de outra conta/arquivo, ausência/corrupção do registro externo, bloqueio de pacote antigo e portal/sessão restaurados, reaplicação, mensagens pendentes e cotas de criação/importação/armazenamento. Guardas PostgreSQL permanecem ativos após a manutenção. Expiração de backups testada somente em diretórios temporários; prévia preserva tudo e execução não remove pastas desconhecidas/recentes/com registro adicional.
+
+Chromium conectado somente à base sintética `davigurumi_browser_essentials_20261007`: jornada financeira/estoque completa e 31 telas de 360 px passaram, com zero erros JS/5xx e **zero violações** nas regras automáticas WCAG 2 A/AA e 2.1 AA do axe-core 4.11.0. Cinco telas principais também verificadas a 768 e 1024 px. Corrigidos contraste, foco de áreas roláveis, foco visível, títulos com conteúdo indevido e preservação de botões originalmente desativados ao reconectar. Scanner automático não certifica WCAG nem substitui leitor de tela/dispositivo.
+
+Carga HTTP pequena, autenticada e sintética: 48 leituras, 4 simultâneas, p50 70 ms, p95 104 ms, zero falhas neste cloud. Não mede capacidade comercial ou proteção contra ataques distribuídos. Regressão de consultas testa painel com oito pedidos adicionais e crescimento de no máximo duas consultas; remove consultas repetidas por pedido/material.
+
+`pip-audit` permanece sem vulnerabilidades conhecidas. Bandit sem achados médios/altos; construção de DELETE administrativo usa nomes fixos de modelos permitidos e parâmetros vinculados, com supressão justificada apenas nesse ponto. Checks Django/migrações/sintaxe JavaScript/diff passaram. Ferramentas instaladas isoladamente em `/tmp`; dependências de produção não foram alteradas.
+
+`check_readiness` identifica corretamente configuração de desenvolvimento como não pronta para abertura. Segredos/registro independente, hospedagem, SMTP, TLS/usuário de banco restrito e backup externo continuam dependentes da operação escolhida. A política de retenção necessita aprovação real; testes não estabelecem prazo legal. Roteiro de dispositivos em [TESTES_DISPOSITIVOS](TESTES_DISPOSITIVOS.md).
+
+O código desta continuidade foi enviado para revisão na branch `feat/privacy-and-local-testing`, após autorização do usuário. Nenhum deploy ou merge desta continuidade foi realizado.

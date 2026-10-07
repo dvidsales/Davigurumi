@@ -67,3 +67,15 @@ bash scripts/with_postgres.sh manage.py prune_transient --apply
 A limpeza remove somente limites expirados há mais de um dia, sessões expiradas e prévias/recibos com mais de 30 dias. Não elimina estoque, contratos, pagamentos, arquivos ou auditoria. A UI permite descartar apenas prévias não aplicadas. Não foi executada limpeza dos dados de desenvolvimento nesta continuidade.
 
 Conta suspensa não faz login nem acessa portal; dados e hashes históricos continuam armazenados. Reativação deve ser feita administrativamente com registro/motivo e não reativa links revogados. Isso não é procedimento de eliminação de dados.
+
+## Exclusões, cotas e prévia de produção
+
+Ver [EXCLUSAO_RETENCAO](EXCLUSAO_RETENCAO.md) antes de exclusão ou restauração. O registro externo atual deve ser montado independente das cópias de banco/arquivos e somente para leitura no runtime. O processo administrativo usa acesso de manutenção e pausa tráfego/tarefas. Não executar exclusão/expurgo com `--apply` como parte do setup.
+
+Cotas iniciais por conta: 1000 materiais, 500 projetos, 1000 clientes, 500 orçamentos, 500 fornecedores, 1000 compras, 500 pedidos, 5000 operações e 5000 revisões de ficha/versões de orçamento; imagens/PDFs somados até 50 MB. Arquivados contam para preservar histórico. Repetição de operação idempotente não ocupa nova vaga; suspensão/revogação continuam possíveis no limite de operações. Importações são atômicas e também respeitam limites. Alteração de cotas é administrativa, não exclusão automática de histórico.
+
+```bash
+bash scripts/with_postgres.sh manage.py check_readiness
+```
+
+O relatório não contém segredos e não publica o app. No ambiente cloud de desenvolvimento, `ready=false` é esperado. `--strict` falha se requisitos técnicos faltarem. Verificações de domínio/proxy, backup independente, agendador e política permanecem manuais; resultado positivo não é certificação de segurança.
