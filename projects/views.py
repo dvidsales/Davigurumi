@@ -149,6 +149,7 @@ def edit(request, pk):
             "technique",
             "base_quantity",
             "hourly_rate",
+            "reference_policy",
             "additional_cost",
             "mode",
         )

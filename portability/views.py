@@ -38,7 +38,16 @@ def index(request):
             form.add_error(None, exc)
         else:
             return redirect("portability:preview", job_id=job.pk)
-    return render(request, "portability/index.html", {"form": form})
+    return render(
+        request,
+        "portability/index.html",
+        {
+            "form": form,
+            "jobs": ImportJob.objects.filter(owner=request.user).order_by(
+                "-created_at"
+            )[:20],
+        },
+    )
 
 
 @never_cache
@@ -113,7 +122,7 @@ def archive(request):
                     )
                 package = json.loads(upload.read(50 * 1024 * 1024 + 1))
                 count = import_archive(owner=request.user, package=package)
-            except (ValueError, UnicodeError, ValidationError) as exc:
+            except (ValueError, UnicodeError, ValidationError, RecursionError) as exc:
                 form.add_error(
                     None,
                     (
@@ -129,3 +138,79 @@ def archive(request):
                 )
                 return redirect("dashboard")
     return render(request, "portability/archive.html", {"form": form})
+
+
+@never_cache
+@login_required
+def template(request, extension):
+    from .tables import COLUMNS
+
+    rows = [
+        list(COLUMNS),
+        [
+            "Fio de exemplo",
+            "fio",
+            "g",
+            "0",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "Algodão",
+            "Médio",
+            "2,5 mm",
+            "0",
+            "Exemplo; remova ou substitua antes de importar.",
+        ],
+    ]
+    if extension == "xlsx":
+        from openpyxl import Workbook
+
+        book = Workbook()
+        sheet = book.active
+        sheet.title = "Materiais"
+        for row in rows:
+            sheet.append(row)
+        sheet.freeze_panes = "A2"
+        output = BytesIO()
+        book.save(output)
+        return download(
+            output.getvalue(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "modelo-materiais.xlsx",
+        )
+    if extension != "csv":
+        from django.http import Http404
+
+        raise Http404
+    output = StringIO()
+    csv.writer(output, delimiter=";").writerows(rows)
+    return download(
+        "\ufeff" + output.getvalue(), "text/csv; charset=utf-8", "modelo-materiais.csv"
+    )
+
+
+@never_cache
+@login_required
+@require_POST
+def discard(request, job_id):
+    from django.contrib.auth import get_user_model
+    from django.db import transaction
+
+    with transaction.atomic():
+        get_user_model().objects.select_for_update().get(pk=request.user.pk)
+        job = get_object_or_404(
+            ImportJob.objects.select_for_update(), pk=job_id, owner=request.user
+        )
+        if job.applied_at:
+            messages.error(
+                request,
+                "Importação aplicada não é descartada por este controle. O histórico de estoque permanece preservado.",
+            )
+        else:
+            job.delete()
+            messages.success(
+                request, "Prévia descartada; nenhum movimento de estoque foi alterado."
+            )
+    return redirect("portability:index")

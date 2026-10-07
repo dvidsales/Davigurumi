@@ -24,7 +24,9 @@ def create_project(
     percentage=Decimal(".5"),
     fee=Decimal(0),
     notes="",
+    reference_policy="available",
 ):
+    get_user_model().objects.select_for_update().get(pk=owner.pk)
     calculate_price(cost=Decimal(0), mode=mode, percentage=percentage, fee=fee)
     project = Project.objects.create(owner=owner, name=name, notes=notes)
     revision = ProjectRevision(
@@ -36,6 +38,7 @@ def create_project(
         base_quantity=base_quantity,
         estimated_seconds=estimated_seconds,
         hourly_rate=hourly_rate,
+        reference_policy=reference_policy,
         additional_cost=additional_cost,
         mode=mode,
         percentage=percentage,
@@ -59,6 +62,7 @@ def clone_revision(project):
             "base_quantity",
             "estimated_seconds",
             "hourly_rate",
+            "reference_policy",
             "additional_cost",
             "mode",
             "percentage",
@@ -100,7 +104,9 @@ def add_material(
     project = get_object_or_404(
         Project.objects.select_for_update(), pk=project_id, owner=owner
     )
-    material = get_object_or_404(Material, pk=material_id, owner=owner)
+    material = get_object_or_404(
+        Material, pk=material_id, owner=owner, is_archived=False
+    )
     base, snapshot = to_base(material, quantity, unit)
     revision, _ = clone_revision(project)
     line = ProjectMaterial(
@@ -130,7 +136,9 @@ def add_alternative(*, owner, line_id, material_id, quantity, note=""):
         raise ValidationError(
             "A ficha mudou. Abra a revisão atual antes de adicionar alternativa."
         )
-    material = get_object_or_404(Material, pk=material_id, owner=owner)
+    material = get_object_or_404(
+        Material, pk=material_id, owner=owner, is_archived=False
+    )
     base, _ = to_base(material, quantity)
     _, mapping = clone_revision(project)
     return MaterialAlternative.objects.create(
@@ -172,8 +180,17 @@ def snapshot_project(*, owner, revision_id, quantity, choices=None):
             raise ValidationError(
                 f"A escala usa uma fração de unidade para {material.name}. Ajuste a ficha ou a quantidade produzida."
             )
-        cost = reference_cost(material)
-        if cost is None:
+        if revision.reference_policy == "manual":
+            cost = manual
+        elif revision.reference_policy == "latest":
+            layer = material.layers.order_by("-created_at", "-id").first()
+            cost = layer.unit_cost if layer else None
+        else:
+            cost = reference_cost(material)
+        manual_reference = (
+            revision.reference_policy == "manual" or cost is None and manual is not None
+        )
+        if cost is None and revision.reference_policy != "manual":
             cost = manual
         if cost is None:
             complete = False
@@ -187,8 +204,7 @@ def snapshot_project(*, owner, revision_id, quantity, choices=None):
                 "quantity": str(needed),
                 "unit": material.unit,
                 "unit_cost": str(cost) if cost is not None else None,
-                "manual_reference": manual is not None
-                and reference_cost(material) is None,
+                "manual_reference": manual_reference,
                 "conversion": line.conversion_snapshot,
                 "alternative": str(alternative_id) if alternative_id else None,
             }
@@ -203,6 +219,7 @@ def snapshot_project(*, owner, revision_id, quantity, choices=None):
     return {
         "schema": 1,
         "formula": "prd59-v1",
+        "reference_policy": revision.reference_policy,
         "project": str(revision.project_id),
         "revision": str(revision.pk),
         "revision_number": revision.number,
@@ -249,6 +266,9 @@ def edit_project(*, owner, project_id, **values):
         "fee",
     ):
         setattr(revision, field, values[field])
+    revision.reference_policy = values.get(
+        "reference_policy", revision.reference_policy
+    )
     revision.full_clean()
     revision.save()
     project.name = values["name"]
@@ -283,7 +303,9 @@ def edit_line(
         line.alternatives.all().delete()
         line.delete()
         return project
-    material = get_object_or_404(Material, pk=material_id, owner=owner)
+    material = get_object_or_404(
+        Material, pk=material_id, owner=owner, is_archived=False
+    )
     base, snapshot = to_base(material, quantity, unit)
     line.material = material
     line.quantity = quantity

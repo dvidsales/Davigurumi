@@ -230,6 +230,11 @@ class ArchiveRoundTripTests(TransactionTestCase):
                     key=uuid.uuid4(),
                     declaration=True,
                 )
+                from production.services import record_expense
+                from materials.stock import compensate_movement
+                spent=record_expense(owner=owner,order_id=order.pk,amount=Decimal("10"),date=timezone.localdate(),description="Envio",key=uuid.uuid4())
+                record_expense(owner=owner,order_id=order.pk,amount=Decimal("10"),date=timezone.localdate(),description="Correção",key=uuid.uuid4(),reverses=spent["expense"])
+                compensate_movement(owner=owner,movement_id=Consumption.objects.get().movement_id,item_id=item.pk,quantity=Decimal("10"),key=uuid.uuid4(),reason="Sobra física")
                 package = export_archive(owner)
             # This is Django's disposable test database, never the development database.
             call_command("flush", verbosity=0, interactive=False)
@@ -241,9 +246,14 @@ class ArchiveRoundTripTests(TransactionTestCase):
                 self.assertEqual(count, len(package["payload"]["records"]))
                 restored = Material.objects.get(pk=material.pk)
                 self.assertEqual(restored.owner, owner)
-                self.assertEqual(restored.physical_stock, Decimal("458"))
+                self.assertEqual(restored.physical_stock, Decimal("468"))
                 self.assertEqual(restored.reserved_stock, Decimal("70"))
                 self.assertEqual(Consumption.objects.count(), 1)
+                from production.models import ActualExpense
+                from production.costs import cost_summary
+                self.assertEqual(ActualExpense.objects.count(),2)
+                self.assertEqual(cost_summary(Order.objects.get())["expenses"],Decimal("0"))
+                self.assertEqual(cost_summary(Order.objects.get())["materials"],Decimal("4"))
                 self.assertEqual(Payment.objects.count(), 1)
                 self.assertEqual(Order.objects.get().net_received, Decimal("20"))
                 imported = QuoteVersion.objects.get(pk=version.pk)
@@ -300,3 +310,62 @@ class TableLimitTests(TestCase):
                 )
         with self.assertRaises(ValidationError):
             read_table(SimpleUploadedFile("broken.xlsx", broken.getvalue()))
+
+
+class ArchiveBoundsTests(TestCase):
+    def test_export_refuses_to_truncate_history_beyond_record_limit(self):
+        from unittest.mock import patch
+        from .archive import export_archive
+        owner=get_user_model().objects.create_user(username='export_limit',email='export_limit@example.test')
+        Material.objects.create(owner=owner,name='Primeiro',kind='yarn',unit='g')
+        Material.objects.create(owner=owner,name='Segundo',kind='yarn',unit='g')
+        with patch('portability.archive.MAX_RECORDS',1), self.assertRaises(ValidationError):
+            export_archive(owner)
+        self.assertEqual(Material.objects.filter(owner=owner).count(),2)
+
+    def test_export_checks_encoded_package_budget(self):
+        from unittest.mock import patch
+        from .archive import export_archive
+        owner=get_user_model().objects.create_user(username='export_bytes',email='export_bytes@example.test')
+        Material.objects.create(owner=owner,name='Fio',kind='yarn',unit='g',notes='x'*2000)
+        with patch('portability.archive.MAX_ARCHIVE_BYTES',2500), self.assertRaises(ValidationError):
+            export_archive(owner)
+
+
+class MetadataTemplateTests(TestCase):
+    def test_template_metadata_mapping_is_preserved_at_confirmation(self):
+        owner=get_user_model().objects.create_user(username='template_metadata',email='template_metadata@example.test')
+        self.client.force_login(owner)
+        response=self.client.get(reverse('portability:template',args=['xlsx']))
+        self.assertIn('spreadsheetml',response['Content-Type'])
+        workbook=Workbook()
+        workbook.active.append(['nome','tipo','unidade','tecido','limite'])
+        workbook.active.append(['Novo fio','fio','g','Algodão',12.5])
+        output=BytesIO();workbook.save(output)
+        mapping={name:name for name in COLUMNS}
+        mapping.update(composicao='tecido',estoque_minimo='limite')
+        job=preview_import(owner=owner,upload=SimpleUploadedFile('materiais.xlsx',output.getvalue()),mapping=mapping,locale='pt-br',separator=';',sheet='')
+        confirm_import(owner=owner,job_id=job.pk)
+        material=Material.objects.get(owner=owner)
+        self.assertEqual(material.composition,'Algodão')
+        self.assertEqual(material.minimum_stock,Decimal('12.5'))
+        self.assertEqual(material.physical_stock,0)
+
+
+class PreviewQuotaTests(TestCase):
+    def test_quota_and_discard_preserve_stock_and_block_foreign_ids(self):
+        owner=get_user_model().objects.create_user(username='preview_quota',email='preview_quota@example.test')
+        other=get_user_model().objects.create_user(username='preview_quota_other',email='preview_quota_other@example.test')
+        from .models import ImportJob
+        job=ImportJob.objects.create(owner=owner,rows=[])
+        mapping={name:name for name in COLUMNS}
+        with override_settings(MAX_IMPORT_PREVIEWS=1),self.assertRaises(ValidationError):
+            preview_import(owner=owner,upload=SimpleUploadedFile('table.csv',b'nome;tipo;unidade\nFio;fio;g'),mapping=mapping,locale='pt-br')
+        self.client.force_login(other)
+        url=reverse('portability:discard',args=[job.pk])
+        self.assertEqual(self.client.post(url,{}).status_code,404)
+        self.client.force_login(owner)
+        self.assertEqual(self.client.get(url).status_code,405)
+        self.assertEqual(self.client.post(url,{}).status_code,302)
+        self.assertFalse(ImportJob.objects.filter(pk=job.pk).exists())
+        self.assertFalse(Material.objects.filter(owner=owner).exists())

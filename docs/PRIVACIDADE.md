@@ -4,7 +4,7 @@ Não é uma política legal aprovada. Antes de convidar clientes reais, definir 
 
 ## Controles presentes
 
-Contas isoladas pelo proprietário; controles negativos testados para IDs/arquivos. Projeção pública por allowlist, sem notas/custos internos. Arquivos privados reencodados sem EXIF e links revogáveis/expiráveis. Cache privado desabilitado e service worker somente estático. Redação de URLs de tokens nos loggers Django, CSP e proteção CSRF. Exportação completa exige senha, não inclui credenciais e permite recuperar dados com referências/arquivos.
+Contas isoladas pelo proprietário; controles negativos testados para IDs/arquivos. Projeção pública por allowlist, sem notas/custos internos. Arquivos privados reencodados sem EXIF e links revogáveis/expiráveis. Cache privado desabilitado e service worker somente estático. Redação de URLs de tokens nos loggers Django, CSP e proteção CSRF, limites de corpo/chunks e de gravação. Exportação completa exige senha, não inclui credenciais e permite recuperar dados com referências/arquivos.
 
 ## Dados que exigem política
 
@@ -12,7 +12,7 @@ E-mail/nome da pessoa artesã, cadastro/contato do cliente, textos internos/livr
 
 ## Pendências que impedem abertura pública
 
-- Não há exclusão/anonimização completa de conta, snapshots e arquivos. Proteções de imutabilidade financeira/comercial exigem tratamento deliberado conforme retenção definida; não prometer que dados pessoais serão preservados para sempre.
+- Há suspensão com senha e revogação de links, mas não exclusão/anonimização completa de conta, snapshots e arquivos. Proteções de imutabilidade financeira/comercial exigem tratamento deliberado conforme retenção definida; não prometer que dados pessoais serão preservados para sempre.
 - Não há tombstones de exclusão aplicados na restauração nem ciclo de expurgo de backups. Um backup antigo pode reintroduzir dados que deveriam ter sido eliminados.
 - Ausência de política publicada, canal de privacidade/resposta a incidentes e verificação de acesso operacional por fornecedor.
 - Logs do proxy/host, backups independentes, TLS, permissões do armazenamento e segredo de produção precisam ser configurados/verificados no ambiente escolhido.
@@ -23,3 +23,5 @@ A revogação de link impede novos acessos, mas não recolhe PDFs/imagens já ba
 ## Procedimento inicial de incidente
 
 Suspender novos acessos ao ambiente afetado, preservar evidências mínimas em armazenamento restrito, rotacionar segredo/tokens e revisar impacto em sessões, e-mail e arquivos. Restaurar apenas em base isolada e reconciliar estoque/financeiro; não colocar a restauração em serviço antes de reaplicar eventuais exclusões/tombstones. Responsáveis, comunicação e prazos legais ainda precisam de definição.
+
+A revisão desta continuidade está em [SECURITY](../SECURITY.md), incluindo limitações do cadastro, abuso distribuído e infraestrutura. Cadastro público fica fechado por padrão fora do desenvolvimento. Suspensão alcança o demo e bloqueia o portal sem destruir o histórico.

@@ -67,19 +67,21 @@ def replenishment(owner):
     """Remaining requirements subtract actual consumption and this item's reserves.
     Compare the sum of uncovered needs with free stock (already excludes every reserve).
     """
+    from materials.stock import net_consumed
+
     required = defaultdict(Decimal)
     orders = Order.objects.filter(
         owner=owner, status__in=["waiting", "in_progress", "paused"]
     ).prefetch_related("items__consumptions__movement")
     for order in orders:
-        for item in order.items.all():
+        for item in order.items.filter(retired=False):
             requirements = defaultdict(Decimal)
             for line in item.snapshot.get("materials", []):
                 requirements[line["material"]] += Decimal(line["quantity"])
             for material_id, quantity in requirements.items():
                 consumed = sum(
                     (
-                        -entry.movement.quantity
+                        net_consumed(entry.movement)
                         for entry in item.consumptions.all()
                         if str(entry.movement.material_id) == material_id
                     ),
@@ -219,7 +221,7 @@ def export_order_report(orders, format):
 def below_minimum(owner):
     rows = []
     for material in Material.objects.filter(
-        owner=owner, minimum_stock__gt=0
+        owner=owner, minimum_stock__gt=0, is_archived=False
     ).prefetch_related("movements", "layers"):
         available = material.available_stock
         if available < material.minimum_stock:

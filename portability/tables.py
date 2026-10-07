@@ -27,6 +27,11 @@ COLUMNS = (
     "cor",
     "codigo_cor",
     "tex",
+    "composicao",
+    "espessura",
+    "agulha_recomendada",
+    "estoque_minimo",
+    "observacoes",
 )
 KINDS = {
     "fio": "yarn",
@@ -189,6 +194,14 @@ def prepare_rows(*, owner, headers, rows, mapping, locale, job_id):
                 raise ValidationError(
                     "Texto com aparência de fórmula não é aceito nesta importação."
                 )
+            for column, field in [
+                ("composicao", "composition"),
+                ("espessura", "thickness"),
+                ("agulha_recomendada", "recommended_hook"),
+                ("observacoes", "notes"),
+            ]:
+                payload[field] = str(get(column) or "").strip()
+            payload["minimum_stock"] = decimal_text(get("estoque_minimo"), locale)
             form = MaterialForm(payload)
             if not form.is_valid():
                 raise ValidationError(
@@ -218,7 +231,15 @@ def prepare_rows(*, owner, headers, rows, mapping, locale, job_id):
     return accepted, errors
 
 
+@transaction.atomic
 def preview_import(*, owner, upload, mapping, locale, separator=";", sheet=""):
+    from django.conf import settings
+
+    get_user_model().objects.select_for_update().get(pk=owner.pk)
+    if ImportJob.objects.filter(owner=owner).count() >= settings.MAX_IMPORT_PREVIEWS:
+        raise ValidationError(
+            "Limite de prévias da conta atingido. Revise as importações e execute a limpeza de dados transitórios antigos."
+        )
     headers, rows = read_table(upload, separator, sheet)
     job_id = uuid.uuid4()
     accepted, errors = prepare_rows(
@@ -299,6 +320,11 @@ def export_material_rows(owner):
                 safe_cell(material.color),
                 safe_cell(material.color_code),
                 str(material.tex) if material.tex is not None else "",
+                safe_cell(material.composition),
+                safe_cell(material.thickness),
+                safe_cell(material.recommended_hook),
+                str(material.minimum_stock),
+                safe_cell(material.notes),
             ]
         )
     return rows

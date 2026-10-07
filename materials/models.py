@@ -41,6 +41,7 @@ class Material(models.Model):
         "Estoque mínimo disponível", max_digits=12, decimal_places=6, default=0
     )
     notes = models.TextField("Observações internas", blank=True, max_length=2000)
+    is_archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -119,7 +120,11 @@ class StockMovement(models.Model):
         related_name="movements",
     )
     reverses = models.ForeignKey(
-        "self", on_delete=models.PROTECT, null=True, blank=True
+        "self",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="compensations",
     )
 
     class Meta:

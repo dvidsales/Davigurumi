@@ -50,7 +50,9 @@ class ItemForm(forms.Form):
 
     def __init__(self, *args, owner, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["material"].queryset = Material.objects.filter(owner=owner)
+        self.fields["material"].queryset = Material.objects.filter(
+            owner=owner, is_archived=False
+        )
 
 
 class ReceiveForm(forms.Form):

@@ -34,6 +34,16 @@ class ProjectRevision(models.Model):
     technique = models.CharField(max_length=100, blank=True)
     base_quantity = models.PositiveIntegerField(default=1)
     estimated_seconds = models.PositiveIntegerField(default=0)
+    reference_policy = models.CharField(
+        "Referência de custo",
+        max_length=12,
+        default="available",
+        choices=[
+            ("available", "Média do estoque disponível"),
+            ("latest", "Última camada registrada"),
+            ("manual", "Referência manual da ficha"),
+        ],
+    )
     hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     additional_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     mode = models.CharField(

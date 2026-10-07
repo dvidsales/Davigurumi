@@ -47,7 +47,9 @@ def add_item(
     )
     if purchase.status != "draft":
         raise ValidationError("Somente compras em rascunho podem receber itens.")
-    material = get_object_or_404(Material, pk=material_id, owner=owner)
+    material = get_object_or_404(
+        Material, pk=material_id, owner=owner, is_archived=False
+    )
     base, snapshot = to_base(material, quantity, unit)
     if unit_price < 0:
         raise ValidationError("Preço não pode ser negativo.")

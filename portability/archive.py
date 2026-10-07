@@ -14,9 +14,12 @@ from django.contrib.auth import get_user_model
 from django.core import serializers, signing
 from django.core.exceptions import ValidationError
 from django.core.management.color import no_style
-from django.db import connection, transaction, models
+from django.db import connection, transaction, models, IntegrityError, DataError
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare
+
+MAX_RECORDS = 10000
+MAX_ARCHIVE_BYTES = 50 * 1024 * 1024
 
 SCOPES = [
     ("materials.material", "owner"),
@@ -49,6 +52,7 @@ SCOPES = [
     ("production.productionsession", "owner"),
     ("production.sessioncorrection", "session__owner"),
     ("production.deliveryevent", "item__order__owner"),
+    ("production.actualexpense", "order__owner"),
     ("finance.payment", "owner"),
     ("finance.paymentallocation", "payment__owner"),
     ("finance.refund", "allocation__payment__owner"),
@@ -71,23 +75,42 @@ def export_archive(owner):
     get_user_model().objects.select_for_update().get(pk=owner.pk)
     records = []
     files = {}
+    byte_budget = 2048
     for label, scope in SCOPES:
         model = apps.get_model(label)
-        records.extend(
-            json.loads(
-                serializers.serialize(
-                    "json", model.objects.filter(**{scope: owner}).order_by("pk")
+        for obj in (
+            model.objects.filter(**{scope: owner})
+            .order_by("pk")
+            .iterator(chunk_size=200)
+        ):
+            if len(records) >= MAX_RECORDS:
+                raise ValidationError(
+                    "Limite de 10000 registros por pacote. A exportação não trunca o histórico."
                 )
-            )
-        )
+            record = json.loads(serializers.serialize("json", [obj]))[0]
+            byte_budget += len(canonical(record).encode("utf-8")) + 2
+            if byte_budget > MAX_ARCHIVE_BYTES:
+                raise ValidationError(
+                    "O pacote excede 50 MB. A exportação não trunca o histórico."
+                )
+            records.append(record)
     from sales.models import FileAsset
 
     for asset in FileAsset.objects.filter(owner=owner):
         with asset.file.open("rb") as uploaded:
-            raw = uploaded.read()
+            raw = uploaded.read(5 * 1024 * 1024 + 1)
         if hashlib.sha256(raw).hexdigest() != asset.sha256:
             raise ValidationError(
                 "Arquivo privado diverge do hash registrado. Verifique o armazenamento antes de exportar."
+            )
+        if len(raw) > 5 * 1024 * 1024 or len(raw) != asset.size:
+            raise ValidationError("Tamanho do arquivo privado incompatível.")
+        byte_budget += (
+            ((len(raw) + 2) // 3) * 4 + len(asset.file.name.encode("utf-8")) + 256
+        )
+        if byte_budget > MAX_ARCHIVE_BYTES:
+            raise ValidationError(
+                "O pacote excede 50 MB. A exportação não trunca o histórico."
             )
         files[asset.file.name] = {
             "sha256": asset.sha256,
@@ -126,13 +149,15 @@ def validate_archive(package):
             "Assinatura de origem inválida. Pacotes deste protótipo só são restaurados com a chave original do ambiente."
         )
     records = payload.get("records", [])
-    if not isinstance(records, list) or len(records) > 10000:
+    if not isinstance(records, list) or len(records) > MAX_RECORDS:
         raise ValidationError("Limite de 10000 registros por pacote.")
     allowed = {label for label, _ in SCOPES}
     seen = set()
     for record in records:
         if (
-            set(record) != {"model", "pk", "fields"}
+            not isinstance(record, dict)
+            or set(record) != {"model", "pk", "fields"}
+            or not isinstance(record["model"], str)
             or record["model"] not in allowed
             or not isinstance(record["fields"], dict)
         ):
@@ -157,7 +182,19 @@ def validate_archive(package):
                     raise ValidationError(
                         "Relação ausente no pacote. A restauração não pode usar registros de outra conta."
                     )
+    if not isinstance(payload.get("files", {}), dict):
+        raise ValidationError("Estrutura de arquivos inválida.")
     for name, file in payload.get("files", {}).items():
+        if (
+            not isinstance(name, str)
+            or not isinstance(file, dict)
+            or set(file) != {"bytes", "sha256"}
+            or not isinstance(file["sha256"], str)
+            or not isinstance(file["bytes"], str)
+        ):
+            raise ValidationError("Estrutura de arquivo inválida.")
+        if len(file["bytes"]) > ((5 * 1024 * 1024 + 2) // 3) * 4:
+            raise ValidationError("Arquivo codificado excede o limite.")
         if Path(name).is_absolute() or ".." in Path(name).parts:
             raise ValidationError("Caminho de arquivo inválido.")
         try:
@@ -210,6 +247,10 @@ def import_archive(*, owner, package):
             ).delete()
         for label, _ in SCOPES:
             group = [record for record in records if record["model"] == label]
+            if label == "production.actualexpense":
+                group.sort(key=lambda record: bool(record["fields"].get("reverses")))
+            if label == "materials.stockmovement":
+                group.sort(key=lambda record: bool(record["fields"].get("reverses")))
             if label == "sales.quoteversion":
                 group.sort(key=lambda record: record["fields"]["number"])
             for record in group:
@@ -278,8 +319,14 @@ def import_archive(*, owner, package):
             destination.chmod(0o600)
             created_paths.append(destination)
         connection.check_constraints()
-    except Exception:
+    except Exception as exc:
         for destination in created_paths:
             destination.unlink(missing_ok=True)
+        if isinstance(
+            exc, (IntegrityError, DataError, serializers.base.DeserializationError)
+        ):
+            raise ValidationError(
+                "O pacote não é compatível com as restrições desta base; nenhum registro foi restaurado."
+            ) from exc
         raise
     return len(records)

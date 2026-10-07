@@ -6,6 +6,7 @@ urlpatterns = [
     path("orcamentos/", views.index, name="index"),
     path("clientes/", views.clients, name="clients"),
     path("orcamentos/novo/", views.create, name="create"),
+    path("orcamentos/<uuid:pk>/comparar/", views.compare, name="compare"),
     path("orcamentos/<uuid:pk>/", views.detail, name="detail"),
     path("orcamentos/<uuid:pk>/nova-versao/", views.new_version, name="new_version"),
     path("versoes/<uuid:pk>/item/", views.item, name="item"),

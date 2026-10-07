@@ -1,11 +1,11 @@
-"""Local development defaults; production must explicitly supply secrets and hosts."""
+"""Production fails closed; manage.py explicitly defaults to local development."""
 
 import os
 from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
+DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY", "development-only-do-not-use-in-production-davigurumi"
 )
@@ -38,6 +38,7 @@ INSTALLED_APPS = [
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "accounts.middleware.DevelopmentSecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -87,7 +88,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
     },
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 12},
+    },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
@@ -101,13 +105,23 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_ROOT = Path(os.getenv("DJANGO_MEDIA_ROOT", str(BASE_DIR / ".local" / "files")))
 MAX_PRIVATE_IMAGES_PER_USER = 100
 MAX_IMAGES_PER_QUOTE = 10
+PUBLIC_SIGNUP_ENABLED = os.getenv("DJANGO_PUBLIC_SIGNUP", "1" if DEBUG else "0") == "1"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "login"
 EMAIL_BACKEND = os.getenv(
-    "DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+    "DJANGO_EMAIL_BACKEND",
+    (
+        "django.core.mail.backends.console.EmailBackend"
+        if DEBUG
+        else "django.core.mail.backends.dummy.EmailBackend"
+    ),
 )
+if not DEBUG and EMAIL_BACKEND == "django.core.mail.backends.console.EmailBackend":
+    raise ImproperlyConfigured(
+        "Console de e-mail não é permitido em produção: links de recuperação não podem ir para logs."
+    )
 EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
@@ -123,7 +137,40 @@ CSRF_COOKIE_SECURE = not DEBUG
 SECURE_SSL_REDIRECT = not DEBUG
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
-MIDDLEWARE.append("accounts.middleware.DevelopmentSecurityMiddleware")
+PRIVATE_UPLOAD_LIMIT = 5 * 1024 * 1024
+ARCHIVE_UPLOAD_LIMIT = 50 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 500
+DATA_UPLOAD_MAX_NUMBER_FILES = 10
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+FILE_UPLOAD_PERMISSIONS = 0o600
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o700
+PASSWORD_RESET_TIMEOUT = 3600
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+SECURE_HSTS_SECONDS = 0 if DEBUG else int(os.getenv("DJANGO_HSTS_SECONDS", "3600"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+if not DEBUG:
+    if (
+        len(SECRET_KEY) < 50
+        or len(set(SECRET_KEY)) < 5
+        or SECRET_KEY.startswith("development-only-")
+    ):
+        raise ImproperlyConfigured(
+            "Use uma chave de produção própria, aleatória e com pelo menos 50 caracteres."
+        )
+    if any(host == "*" or host.startswith(".") for host in ALLOWED_HOSTS):
+        raise ImproperlyConfigured(
+            "Use hosts explícitos; wildcard global não é permitido em produção."
+        )
+PORTAL_READ_RATE_LIMIT = 120
+PORTAL_READ_RATE_WINDOW_SECONDS = 60
+MAX_IMPORT_PREVIEWS = 20
+REPORT_READ_RATE_LIMIT = 60
+REPORT_READ_RATE_WINDOW_SECONDS = 60
+WRITE_RATE_LIMIT = 120
+WRITE_RATE_WINDOW_SECONDS = 60
 AUTH_RATE_LIMIT = 15
 AUTH_RATE_WINDOW_SECONDS = 900
 LOGGING = {

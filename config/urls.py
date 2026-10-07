@@ -2,7 +2,7 @@ from django.contrib.auth import views as auth
 from django.urls import include, path
 from accounts.views import dashboard, signup
 from .pwa import manifest, service_worker
-from accounts import demo
+from accounts import demo, security
 
 urlpatterns = [
     path("manifest.webmanifest", manifest, name="manifest"),
@@ -10,6 +10,13 @@ urlpatterns = [
     path("", dashboard, name="dashboard"),
     path("demo/", demo.index, name="demo"),
     path("demo/alternar/", demo.switch, name="demo_switch"),
+    path("conta/seguranca/", security.index, name="account_security"),
+    path("conta/senha/", auth.PasswordChangeView.as_view(), name="password_change"),
+    path(
+        "conta/senha/alterada/",
+        auth.PasswordChangeDoneView.as_view(),
+        name="password_change_done",
+    ),
     path("conta/criar/", signup, name="signup"),
     path("conta/entrar/", auth.LoginView.as_view(), name="login"),
     path("conta/sair/", auth.LogoutView.as_view(), name="logout"),

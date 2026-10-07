@@ -34,6 +34,7 @@ class Order(models.Model):
             ("delivered", "Entregue"),
         ],
     )
+    planned_start = models.DateField("Início planejado", null=True, blank=True)
     production_due = models.DateField("Prazo de produção", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -80,6 +81,7 @@ class OrderItem(models.Model):
     line_key = models.UUIDField(default=uuid.uuid4)
     description = models.CharField(max_length=300)
     quantity = models.PositiveIntegerField()
+    retired = models.BooleanField(default=False)
     produced = models.PositiveIntegerField(default=0)
     delivered = models.PositiveIntegerField(default=0)
     snapshot = models.JSONField(default=dict)
@@ -156,3 +158,24 @@ class DeliveryEvent(models.Model):
     quantity = models.PositiveIntegerField()
     notes = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ActualExpense(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name="expenses")
+    key = models.UUIDField(unique=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField()
+    description = models.CharField(max_length=200)
+    reverses = models.OneToOneField(
+        "self", on_delete=models.PROTECT, null=True, blank=True, related_name="reversal"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["date", "created_at", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0), name="actual_expense_positive"
+            )
+        ]

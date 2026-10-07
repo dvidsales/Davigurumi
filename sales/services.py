@@ -346,6 +346,7 @@ def get_token(raw):
         ShareToken.objects.select_related("version__quote"),
         digest=hashlib.sha256(raw.encode()).hexdigest(),
         revoked_at__isnull=True,
+        version__quote__owner__is_active=True,
     )
     if token.expires_at <= timezone.now() or token.version.status == "revoked":
         raise Http404

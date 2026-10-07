@@ -215,3 +215,83 @@ class MinimumStockTests(TestCase):
         material = form.save(commit=False)
         self.assertEqual(material.composition, "Algodão")
         self.assertEqual(material.minimum_stock, 10)
+
+
+class MaterialReportTests(TestCase):
+    def test_material_report_uses_historic_cost_and_blocks_foreign_filter(self):
+        from decimal import Decimal as D
+        from django.urls import reverse
+        from materials.models import Material
+        from materials.stock import (
+            receive_stock,
+            consume_available,
+            compensate_movement,
+        )
+        from io import BytesIO
+        from openpyxl import load_workbook
+
+        owner = get_user_model().objects.create_user(
+            username="material_report", email="material_report@example.test"
+        )
+        other = get_user_model().objects.create_user(
+            username="material_report_other", email="material_report_other@example.test"
+        )
+        material = Material.objects.create(
+            owner=owner, name="=SUM(1)", kind="yarn", unit="g"
+        )
+        foreign = Material.objects.create(
+            owner=other, name="Privado", kind="yarn", unit="g"
+        )
+        receive_stock(
+            owner=owner,
+            material_id=material.pk,
+            quantity=D("100"),
+            unit_cost=D(".2"),
+            key=uuid.uuid4(),
+        )
+        result = consume_available(
+            owner=owner,
+            material_id=material.pk,
+            quantity=D("20"),
+            key=uuid.uuid4(),
+            reason="Trabalho",
+        )
+        compensate_movement(
+            owner=owner,
+            movement_id=result["movements"][0],
+            quantity=D("5"),
+            key=uuid.uuid4(),
+            reason="Sobra",
+        )
+        self.client.force_login(owner)
+        url = reverse("operations:material_report")
+        response = self.client.get(url, {"material": material.pk, "export": "xlsx"})
+        sheet = load_workbook(BytesIO(response.content)).active
+        rows = list(sheet.values)[1:]
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(sum(row[5] for row in rows), 85)
+        self.assertEqual(sum(row[7] for row in rows), 17)
+        self.assertTrue(all(row[1] == "'=SUM(1)" for row in rows))
+        denied = self.client.get(url, {"material": foreign.pk, "export": "xlsx"})
+        self.assertIn("text/html", denied["Content-Type"])
+        self.assertNotContains(denied, foreign.name)
+
+
+class DisabledEmailBackendTests(TestCase):
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.dummy.EmailBackend")
+    def test_disabled_backend_keeps_outbox_pending_instead_of_claiming_delivery(self):
+        owner = get_user_model().objects.create_user(
+            username="dummy_mail", email="dummy_mail@example.test"
+        )
+        NotificationPreference.objects.create(owner=owner, email_enabled=True)
+        emit(
+            owner=owner,
+            kind="test",
+            object_id=uuid.uuid4(),
+            message="Notificação sintética",
+        )
+        self.assertEqual(deliver_outbox(), {"sent": 0, "failed": 1})
+        event = OutboxEvent.objects.get()
+        self.assertEqual(event.status, "pending")
+        self.assertEqual(event.attempts, 1)
+        self.assertEqual(event.last_error, "OSError")
