@@ -1,28 +1,25 @@
-# Registro de decisões
+# Registro de decisões — 07/10/2026
 
-Data: 07/10/2026. A origem das escolhas é explícita; recomendações não equivalem a
-aprovações do usuário.
+| ID | Escolha | Origem e estado |
+| --- | --- | --- |
+| D01 | Python/Django + templates | Preferência por Python do usuário; escolha técnica para manutenção simples |
+| D02 | Continuar desenvolvimento sem aguardar teste manual | Autorização explícita mais recente do usuário |
+| D03 | PostgreSQL 17 para concorrência; SQLite opcional local | PostgreSQL e SQLite validados; bases distintas, sem transferir cadastros silenciosamente |
+| D04 | Média disponível para estimar, FIFO para alocar, custo da camada para realizar | Implementado conforme referência; permitir futura seleção por ficha |
+| D05 | Consumo explícito; timer não baixa estoque | Implementado e testado |
+| D06 | Versões/PDF congelados; aditivo com novo aceite | Implementado; casos que exigem conciliação são rejeitados |
+| D07 | Uma sessão ativa por pessoa | Implementado com constraint; confirmar múltiplos trabalhos em paralelo numa evolução |
+| D08 | Decimal/half-up e fórmulas §59 | Implementado; subtotais reais não são lucro final sem despesas completas |
+| D09 | SMTP configurável, console padrão | Outbox/retentativa validadas; provedor real ausente |
+| D10 | Fotos privadas, EXIF removido, publicação explícita | Implementado; armazenamento atual é local ignorado |
+| D11 | Referrer-Policy same-origin no portal | Chromium HTTP enviou Origin null com no-referrer; same-origin preserva CSRF nativo e impede referrer externo com token |
+| D12 | Demo com proprietário separado | Implementado; cópia não leva estoque, custos ou finanças fictícias |
+| D13 | Pacote completo assinado, destino vazio | Round-trip validado; não mescla IDs; aceita chave original, revoga links e invalida aceite importado para novos pedidos |
+| D14 | Backup local para prova de recuperação | Restaurado; falta destino independente, agendador e retenção |
+| D15 | `main` revisada + branches de funcionalidade | Recomendação técnica; `develop` opcional quando houver integração paralela; nenhum merge/proteção criado |
+| D16 | Verde profundo/sálvia provisórios | Identidade final não foi aprovada |
+| D17 | Sem serviços pagos/deploy/dados reais | Dentro da autorização atual; preparar proposta concreta antes de operação externa |
 
-| ID | Questão / alternativas | Escolha e motivo | Estado / origem / impacto |
-| --- | --- | --- | --- |
-| D01 | Linguagem: Python ou TypeScript | Priorizar Python | Preferência explícita do usuário; backend/framework Python |
-| D02 | Django, FastAPI/React, React/Supabase | Django modular + templates | Decisão técnica desta primeira entrega, pela manutenção simples; PostgreSQL futuro |
-| D03 | Banco local PostgreSQL ou SQLite | SQLite para desenvolvimento inicial, PostgreSQL antes de concorrência | Escolha técnica temporária; não comprova transações/locks de produção |
-| D04 | Direção visual | Verde profundo e sálvia provisórios; alternativas azul/areia documentadas | Não aprovada como identidade final; tokens CSS substituíveis |
-| D05 | Referência/alocação/valorização | Média disponível/FIFO físico/custo específico | Proposta do PDF, ainda não implementada; ratificar antes de camadas/custos |
-| D06 | Consumo | Explícito e parcial; início de produção não baixa estoque | Contrato de referência preservado; módulo ainda não implementado |
-| D07 | Versões/aceites | Uma versão vigente, pedido único por aceite, aditivo | Proposta do PDF; pendente antes do comercial |
-| D08 | Dinheiro | Decimal, half-up, fórmulas §59 | Implementado em simulação, sem cobrança/transação comercial |
-| D09 | Cronômetro | Uma sessão ativa por pessoa | Proposta; ratificar trabalho simultâneo antes da produção |
-| D10 | Gratuidade | R$ 0 local; não ativar serviços pagos | Local verificado; hospedagem pública/SMTP/backup não escolhidos |
-| D11 | Recuperação | Console Django no desenvolvimento | Funciona tecnicamente; não é envio de e-mail real |
-| D12 | Privacidade/backup | Sem dados reais no piloto até controles operacionais | Não há backup diário/destino independente ou política legal final |
+Padrões de desenvolvimento: validade 15 dias (editável), fuso America/Sao_Paulo, arquivos até 5 MB/16 milhões de pixels, 100 imagens por conta/10 por versão e imports até 2000 linhas. São limites do protótipo, não cotas contratadas em fornecedor.
 
-Configurações sugeridas para módulos futuros (não preferências informadas): validade
-de orçamento 15 dias; fuso America/Sao_Paulo; uploads de 5 MB; alerta a 70% de cota.
-Só o fuso está efetivamente configurado na aplicação atual. Não há módulo de orçamento/upload.
-
-Pendências que não impedem o desenvolvimento local: hospedagem Python sem cobrança,
-SMTP para notificações/recuperação, destino independente de backup, identidade final,
-política de valorização e retenção. Nenhum segredo foi solicitado em chat ou incluído
-no repositório. Essas decisões serão necessárias antes dos respectivos recursos/piloto.
+Retenção legal, exclusão, tombstones, push e infraestrutura permanecem pendentes. Essas pendências devem ser apresentadas separadamente do que já funciona, sem afirmar produção pronta ou cumprimento integral do PRD.

@@ -1,59 +1,47 @@
-# Contratos de negócio
+# Contratos de negócio implementados
 
-Referência: seções 53–76 do PRD extraído. Propostas do PDF continuam identificadas
-como propostas quando dependem de decisão de negócio. Esta entrega valida apenas
-abertura de estoque e cálculo isolado; não simula aprovação dessas decisões.
+Referência: PRD extraído, seções 53–76. Decisões técnicas abaixo implementam o protótipo e podem ser revistas com feedback; não representam aprovação legal ou comercial.
 
-## Implementado
+## Estoque e custo
 
-**Materiais:** nome/tipo/unidade essenciais; marca/cor/código/tex/notas opcionais.
-Tex positivo apenas em fios. Unidades base iniciais: g, m, un. `un` é indivisível.
-Conversão de novelo para gramas ainda não existe: informe quantidade já na unidade base.
+Unidades base: g, m, un; `un` não aceita fração. Tex positivo só para fios. Massa e comprimento não são convertidos universalmente: apresentações específicas pertencem ao material e têm versão/fator preservado no movimento. A unidade base do cadastro não muda pela edição.
 
-**Abertura:** material e entrada criados em uma transação; quantidade zero cria somente
-material. Sem fornecedor nem compra fictícios. Custo nulo é desconhecido; custo zero
-é um valor conhecido. O custo informado se refere à unidade base, não à embalagem.
-Histórico é a origem do saldo. Mesma chave de formulário/dono retorna o mesmo cadastro;
-reenvio alterado é rejeitado. Um formulário novo representa um novo cadastro.
+Custo `None` é desconhecido; zero é conhecido. Material sem quantidade inicial não recebe camada fictícia. Quantidades/custos por unidade têm seis decimais, máximo 999999,999999, validado também com SQLite.
 
-Quantidade e custo unitário são limitados nesta versão a 999999,999999 (12 dígitos,
-seis decimais), para não prometer a precisão de NUMERIC PostgreSQL na representação
-numérica do SQLite. O valor máximo foi testado após recarregar o banco. Aumentar esse
-limite exige PostgreSQL e teste de persistência; não apenas mudar o formulário.
+Físico vem do ledger; reservado vem das reservas/camadas; disponível = físico − reservado. Reserva não baixa físico. Consumo de reserva baixa físico e reservado; liberação baixa apenas reservado. Consumo livre não usa saldo reservado. Escolha de camada é FIFO por criação/ID; custo realizado vem da camada efetivamente consumida. Estimativa pode usar custo mais antigo, recente ou média disponível; fichas usam média disponível e referência manual explícita quando necessária.
 
-**Cálculo (§59):** usa `Decimal`, sem float. Custo = materiais + horas × valor/hora +
-adicionais. Markup: `P0 = C × (1 + k)`. Margem: `P0 = C / (1 − m − t)`.
-Desconto: `P = P0 × (1 − d) − D`. Taxas no markup são deduzidas do resultado, sem
-aumentar P0. Resultado = preço final × (1 − t) − custo. Margem efetiva = resultado/preço;
-preço zero tem margem indefinida. Valores apresentados usam half-up em centavos;
-intermediários usam precisão maior. Resultado usa o preço final arredondado.
+Alterar referência atual não reescreve custos históricos. Estoque negativo é rejeitado. Serviços transacionais usam lock do proprietário para serializar operações correlatas no PostgreSQL; a chave de operação é única por proprietário e o payload precisa ser igual numa repetição. PostgreSQL é necessário para a garantia concorrente; SQLite é conveniência local.
 
-Validar números finitos, custo/percentuais não negativos, taxa < 100%, desconto de 0 a
-100%, `m + t < 100%` e preço não negativo. Venda abaixo do custo gera aviso. A calculadora
-é exploratória: não guarda snapshot, não publica preço nem garante que todos os custos
-foram informados. Custo desconhecido de material não é integrado automaticamente aqui.
+## Compras e fichas
 
-## Contratos a implementar nas próximas entregas
+Rascunho não movimenta estoque. Frete e desconto são rateados em centavos pelo maior resto, com desempate determinístico. Itens de valor total zero com encargos exigem rateio manual; a versão atual rejeita essa situação e ainda não oferece o formulário de rateio manual. Cada recebimento parcial cria suas próprias camadas. Cancelar o restante conserva recebimentos. Repetir compra cria rascunho novo e editável.
 
-- Físico = entradas − saídas; disponível = físico − reserva. Reserva não consome.
-  Exemplo obrigatório: 508/120/388 → consumir 50 reservado → 458/70/388 → liberar 70
-  → 458/0/458. Transações e locks PostgreSQL precisam de teste concorrente real.
-- Confirmar compra não recebe. Receber parcial gera camada/movimento/custo atomicamente.
-  Repetição cria rascunho; correção compensa, não apaga. Rateio determinístico de centavos.
-- Estimativa, alocação física e valorização realizada são distintas. Propostas: média
-  ponderada disponível, FIFO físico e custo específico de camada. Teste 100g×0,10 +
-  100g×0,20: estimar 120g custa 12/24/18; consumir FIFO custa 14.
-- Publicar congela versão, imagens e condições. Nova versão invalida aprovação da anterior
-  sem apagar histórico. GET nunca aprova. Aceite e pedido têm unicidade/idempotência.
-- Portal e PDF expõem somente identidade comercial mínima, itens, preço, imagens
-  selecionadas, prazos, validade, condições e aceite; nunca custo/margem/notas/estoque.
-- Produção, entrega e financeiro possuem estados independentes. Cancelamento libera
-  reserva remanescente, conserva consumo e pagamentos; sobra real retorna por movimento.
-- Cronômetro usa timestamps/sessões do servidor, não contador local persistido por segundo.
-- Cobrança prevista não é recebimento. Recebimento 50 + 30 − estorno 10 num pedido 100
-  implica líquido 70 e a receber 30. Sinal convertido em pedido não replica pagamento.
-- Importações têm prévia, revalidação, limite e idempotência; não executam fórmulas/macros.
-  Exportação relacional conserva vínculos e arquivos, com round trip verificável.
-- Demo isolada não envia comunicações reais nem copia saldos/pagamentos implicitamente.
-- Eliminação de dados pessoais alcança snapshots/arquivos/logs; tombstones reaplicados
-  após restauração. Política depende de finalidade/retenção, não de imutabilidade eterna.
+Ficha calcula para uma quantidade-base. Alterações criam revisão; alternativas são escolhidas por item de orçamento, sem substituição automática. Escalas que produzam fração de material indivisível são rejeitadas.
+
+## Preço
+
+`Decimal`, half-up em centavos, intermediários com precisão maior. `C = materiais + segundos/3600 × valor/hora + adicionais`. Markup `P0 = C × (1 + k)`. Margem `P0 = C/(1 − m − t)`. Desconto `P = P0 × (1 − d) − D`. No markup, taxas são deduzidas do resultado e não aumentam P0. Resultado `P × (1 − t) − C`; margem indefinida quando P=0. `m+t` precisa ser menor que 100%.
+
+Custos desconhecidos deixam cálculo incompleto. Publicação exige preço manual e reconhecimento da limitação; preço abaixo do custo após taxas exige confirmação explícita. Não alegar lucro real com base em subtotais de consumo: custos adicionais efetivos e despesas externas ainda não são lançados.
+
+## Comercial e cliente
+
+Publicação congela itens, condições, validade, seleção de imagens, projeções pública/privada, hash e bytes do PDF. Campos internos/custos não entram no portal. Links aleatórios são armazenados apenas como hash; podem expirar ou ser revogados. Reemissão invalida links anteriores. GET não aprova; POST com CSRF e declaração explícita aceita a versão/hash exatos. Acesso por link não comprova identidade nem assinatura digital certificada.
+
+Nova versão substitui versão não aceita; aceite existente continua preservado. Alteração após aceite gera aditivo que exige outro aceite. Aplicação ao pedido conserva consumo e pagamentos; redução abaixo do produzido/entregue e alterações de materiais já reservados/consumidos são rejeitadas para exigir conciliação. Remoção de itens já convertidos ainda não é conciliada automaticamente.
+
+## Produção e caixa
+
+Converter aceite em pedido é idempotente; não inicia nem consome. Produção, entrega e situação financeira são separados. Há uma sessão ativa por pessoa; fechar navegador não para o timer. Pausa calcula intervalo no servidor; correção mantém valor original e acrescenta motivo/duração. Entregas não excedem produzido.
+
+Cancelar libera reservas remanescentes, conserva consumo e dinheiro, indica pendência de reembolso. Concluir exige quantidade produzida completa e sessão encerrada; não registra entrega nem quita financeiro. Reabrir exige motivo e não desfaz lançamentos.
+
+Recebimentos são registros manuais, sem banco/gateway. Sinal anterior ao pedido é vinculado ao mesmo pagamento ao converter. Previsão não aumenta caixa; reversão não apaga recebimento. Reembolso não supera saldo recebido e excedente exige reconhecimento. Parcelas exibem distribuição do líquido por vencimento, sem gerar cobranças bancárias. Caixa por período usa data do pagamento e, separadamente, data de cada reembolso. Saldos dos pedidos no relatório são atuais.
+
+## Portabilidade e demonstração
+
+CSV/XLSX importam novos materiais, não atualizam silenciosamente cadastros. Prévia não movimenta estoque; qualquer erro impede confirmação inteira. Repetir confirmação não duplica. Texto numérico tem formato escolhido; números tipados de XLSX independem do formato textual. Fórmulas XLSX são rejeitadas; exportação neutraliza texto com aparência de fórmula.
+
+Pacote relacional é autenticado pela chave do ambiente original, exige conta/base sem colisões e armazenamento vazio, inclui arquivos por hash e não inclui senhas/sessões. Não mescla bases. Links são revogados e aceites importados não autorizam novos pedidos, enquanto pedidos já existentes são preservados.
+
+Demonstração usa proprietário separado, mantendo autenticação da conta real. Cópia requer senha e seleção; projetos trazem seus materiais, com estoque/custos/horas/preços zerados, sem pagamentos ou clientes fictícios.

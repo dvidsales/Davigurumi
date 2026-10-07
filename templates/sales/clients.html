@@ -1,0 +1,2 @@
+{% extends 'base.html' %}
+{% block content %}<header class="page-heading"><h1>Clientes</h1></header><div class="dashboard-grid"><section class="card"><h2>Novo cliente</h2><form method="post">{% csrf_token %}{% include 'form_fields.html' %}<button class="button">Cadastrar cliente</button></form></section><section class="card"><h2>Seus clientes</h2><ul>{% for client in page_obj %}<li>{{ client.name }} · {{ client.contact }}</li>{% empty %}<li>Nenhum cliente.</li>{% endfor %}</ul>{% include 'pagination.html' %}</section></div>{% endblock %}

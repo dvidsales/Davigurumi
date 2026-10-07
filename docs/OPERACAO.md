@@ -1,57 +1,52 @@
-# Operação, segurança e recuperação
+# Operação de desenvolvimento
 
-## Ambiente atual
+## Instalar e iniciar
 
-Desenvolvimento isolado, SQLite e servidor Django. Dados sintéticos usados nos testes.
-Não há deploy, worker, provedor de e-mail, arquivos de clientes ou cobrança ativada.
-Processos não sobrevivem necessariamente à restauração da máquina: o servidor deve
-ser iniciado novamente a partir das instruções salvas do ambiente.
+Checkout cloud: `/workspace/Davigurumi`; venv: `/workspace/.venvs/davigurumi`. `requirements.txt` fixa dependências. Não executar `makemigrations` para um simples setup; use migrations versionadas. Não trocar branch/resetar alterações para reinstalar dependências.
 
-## Antes de produção
+```bash
+bash scripts/dev_postgres.sh
+bash scripts/with_postgres.sh manage.py migrate --noinput
+bash scripts/with_postgres.sh manage.py check
+bash scripts/with_postgres.sh manage.py reconcile_stock
+bash scripts/with_postgres.sh manage.py runserver 127.0.0.1:8000
+```
 
-1. PostgreSQL com papel não administrativo; testar vínculos/ownership e concorrência.
-2. `DJANGO_DEBUG=0`, chave secreta forte no ambiente, hosts reais, TLS, cookies seguros,
-   servidor WSGI suportado e estáticos separados. Executar `check --deploy`; o padrão
-   local não passa pelos critérios de produção por design.
-3. SMTP transacional, verificação de endereço e recuperação entregue de fato.
-4. Rate limiting de login/cadastro/reset/portal, quotas, logging sem tokens/senhas e CSP.
-5. Backup/restauração independente e rotina monitorada; política de retenção e suporte.
-6. Revisão de acessibilidade/segurança e testes da jornada completa antes de dados reais.
+O container usa PostgreSQL 17 e volume `.local/postgres`. Porta exposta apenas em `127.0.0.1:54329`. Helpers usam senha local ignorada e não imprimem valores. TLS é desabilitado exclusivamente nessa conexão loopback; conexões externas usam `POSTGRES_SSLMODE=require` por padrão. Reinicie o servidor após restaurar o ambiente e confirme HTML de login por requisição local. `runserver` é só desenvolvimento.
 
-Secrets ficam em variáveis/bindings seguros, nunca em `.env.example`, logs, exports ou
-scripts. Em produção, não usar sessão/secret de desenvolvimento. `POSTGRES_SSLMODE`
-padrão é `require`; validar cadeia com `verify-full` e CA do provedor antes do deploy.
+Sem `POSTGRES_DB`, o Django seleciona `.local/db.sqlite3`. Não apague o arquivo para resolver erro. Os dois bancos não compartilham registros. Não aplicar migrações na produção sem analisar compatibilidade e cópia restaurável.
 
-## Backup: planejado, ainda não operacional
+## E-mail e tarefas
 
-SQLite de desenvolvimento pode ser copiado com API `sqlite3.Connection.backup` para
-snapshot consistente; não copiar arquivo aberto às cegas. PostgreSQL deverá usar
-`pg_dump`/restauração isolada. Banco, arquivos e manifesto de hashes precisam de janela
-consistente; secrets têm procedimento separado. Restrinja leitura das cópias, que
-contêm hashes de senhas e dados privados.
+Variáveis documentadas em `.env.example`. O aplicativo lê variáveis do processo, não `.env` automaticamente. Console é padrão; envio real requer backend SMTP, host/porta/remetente/credenciais e verificação do provedor. Não colocar segredos no código, terminal compartilhado ou chat.
 
-Proposta do PRD: cópia diária, sete diárias/quatro semanais, RPO 24h, RTO um dia útil.
-São metas, **não SLA nem execução comprovada**. Cópia na própria máquina é contingência
-local, não destino independente. Falta definir responsável, destino, criptografia,
-frequência, credenciais e monitoramento; isso bloqueia piloto real, não desenvolvimento.
+```bash
+bash scripts/with_postgres.sh manage.py generate_alerts
+bash scripts/with_postgres.sh manage.py deliver_notifications
+```
 
-Teste de recuperação exigido: restaurar banco/objetos em ambiente vazio, conferir
-usuários, saldos, versões, custos e permissões; aplicar tombstones para não ressuscitar
-dados pessoais eliminados. Não houve teste de backup/restauração nesta entrega.
+O primeiro gera alertas internos de reposição, prazo de produção em até dois dias e parcelas em até três dias, com deduplicação por dia/evento. Não percorre contas demo. O segundo processa até 50 mensagens pendentes e registra retentativas em falha. Nenhum comando instala agendador. É necessário executar periodicamente em produção; ainda não há cron/worker contínuo. Opt-in por e-mail é desabilitado por padrão.
 
-## Deploy e retorno
+## Backup e restauração isolada
 
-Escolher hospedagem Python e PostgreSQL após validar limites, uso comercial e cobrança.
-Usar dados/credenciais distintos entre desenvolvimento e produção. Pipeline futuro:
-testes → migrations compatíveis → collectstatic → deploy WSGI → smoke funcional.
-Antes de migração real, criar cópia restaurável e ensaiar em staging; rollback de código
-não desfaz automaticamente mudanças no banco. Nunca usar snapshot local como prova de
-publicação ou continuidade do serviço.
+Pausar alterações/entradas de arquivo durante a cópia; pg_dump e ZIP de arquivos não são um snapshot distribuído único. Os scripts abaixo são helpers do container local, não solução de backup externo.
 
-## Privacidade e retenção
+```bash
+bash scripts/backup_postgres.sh /workspace/.backups/copia-nova
+bash scripts/restore_postgres.sh /workspace/.backups/copia-nova davigurumi_restore_conferencia
+DAVIGURUMI_TEST_DB=davigurumi_restore_conferencia \
+  DJANGO_MEDIA_ROOT=/workspace/Davigurumi/.local/restored_files/davigurumi_restore_conferencia \
+  bash scripts/with_postgres.sh manage.py reconcile_stock
+```
 
-Minimizar dados de clientes/evidências; nunca exigir cartão, CNPJ ou endereço sem
-finalidade. Retenção precisa mapear categoria/finalidade/prazo/fundamento. Histórico
-comercial não autoriza retenção pessoal indefinida. Eliminação deverá alcançar snapshots,
-arquivos, caches e logs, com tombstones reaplicados após restore. Termos e política são
-pendentes; revisão jurídica não foi feita e não se afirma conformidade LGPD.
+Backup cria destino novo, `database.dump`, `files.zip` e manifesto SHA-256, com umask restritiva. Respeita `DJANGO_MEDIA_ROOT` e, para base sintética explicitamente escolhida, `DAVIGURUMI_TEST_DB`. Restaurador exige nome `davigurumi_restore_...`, valida hashes/caminhos antes da criação, usa banco novo e diretório de arquivos novo. Não substitui banco original. Hash verifica integridade contra manifesto confiável; não autentica manifesto adulterado por atacante.
+
+Após restauração, conferir contagens/relações, ledger × camadas/reservas, pagamentos/reembolsos, PDFs e hashes dos objetos privados. Não recolocar base em serviço sem procedimento de exclusões/tombstones quando esses controles estiverem implementados. Export/import de conta revoga links; **backup operacional preserva tokens/sessões existentes** e exigirá decisão operacional de revogação antes da retomada.
+
+Ainda falta: cópia diária agendada, destino independente da máquina, monitoramento de falha, retenção/expurgo, criptografia adequada do destino e simulação regular de recuperação. Backup local sozinho não atende essa exigência.
+
+## Produção futura
+
+Definir host HTTPS, servidor WSGI/ASGI, proxy confiável, segredo diferente do desenvolvimento, `DJANGO_DEBUG=0`, hosts/CSRF origens explícitos, staticfiles, armazenamento privado, SMTP e agendador. Não expor `.local/` ou caminhos de arquivos como mídia pública. Configurar também redação de tokens nos logs do proxy. Cookies seguros/redirect HTTPS existem, mas proxy e HSTS precisam de configuração conforme a infraestrutura.
+
+`python manage.py check --deploy` deve ser revisado nessa configuração real; não foi usado para afirmar prontidão pública. Implantação/merge/serviços pagos ainda não foram executados nem autorizados.

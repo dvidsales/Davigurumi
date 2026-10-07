@@ -7,6 +7,7 @@ from django.views.decorators.cache import never_cache
 from materials.models import Material
 from .forms import SignupForm
 
+
 @never_cache
 def signup(request):
     if request.user.is_authenticated:
@@ -17,17 +18,37 @@ def signup(request):
             with transaction.atomic():
                 user = form.save()
         except IntegrityError:
-            form.add_error(None, "Não foi possível criar a conta com esses dados. Revise usuário e e-mail.")
+            form.add_error(
+                None,
+                "Não foi possível criar a conta com esses dados. Revise usuário e e-mail.",
+            )
         else:
             login(request, user)
-            messages.success(request, "Sua conta está pronta. Comece pelos materiais que você já possui.")
+            messages.success(
+                request,
+                "Sua conta está pronta. Comece pelos materiais que você já possui.",
+            )
             return redirect("dashboard")
     return render(request, "accounts/signup.html", {"form": form})
+
 
 @never_cache
 @login_required
 def dashboard(request):
+    from operations.reporting import overview
+
     materials = Material.objects.filter(owner=request.user)
-    return render(request, "dashboard.html", {"material_count": materials.count(),
-                   "unknown_cost_count": materials.filter(movements__unit_cost__isnull=True).distinct().count(),
-                   "recent_materials": materials.order_by("-created_at")[:5]})
+    return render(
+        request,
+        "dashboard.html",
+        {
+            "summary": overview(request.user),
+            "material_count": materials.count(),
+            "unknown_cost_count": materials.filter(
+                layers__unit_cost__isnull=True, layers__physical__gt=0
+            )
+            .distinct()
+            .count(),
+            "recent_materials": materials.order_by("-created_at")[:5],
+        },
+    )
