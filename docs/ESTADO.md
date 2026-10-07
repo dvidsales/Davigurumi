@@ -35,9 +35,9 @@ GitHub: PRs #1–#3 incorporados; novo trabalho está na branch de segurança. N
 
 Revisão detalhada em [SECURITY.md](../SECURITY.md): isolamento de 45 rotas privadas, limites de uploads/requisições/exportações, suspensão e revogação, senha e configuração de produção restritiva. Novos fluxos incluem despesas reais/reversões, recuperação de estoque, arquivamento, aditivos reconciliados, calendário, comparação de versões, referências de custo e relatórios de movimentos. Ainda faltam push, retenção/anonimização/tombstones, dispositivos reais e avaliação independente.
 
-## Continuidade local essencial — sem push
+## Continuidade essencial — envio autorizado
 
-O usuário pediu priorizar pendências essenciais e deixar notificações para o final, sem necessidade de publicação no GitHub. A continuidade após `55a40b0` é local: não fazer push automático nem alterar o PR #4 com essas mudanças.
+O usuário pediu priorizar pendências essenciais e deixar notificações para o final; posteriormente autorizou enviar a atualização ao GitHub. PR #4 já incorporado em `66a5c66`. A continuidade foi reaplicada sobre essa main na branch `feat/privacy-and-local-testing`, para novo PR. Não fazer merge ou deploy.
 
 Exclusão integral administrativa com prévia, tombstones externos assinados, bloqueio de sessão/portal/importação e reaplicação na restauração; expiração de backups reconhecidos com simulação por padrão. Nenhum `--apply` foi executado em dados reais/backups existentes. Tests usaram apenas bancos de teste e diretórios temporários. Cotas por conta, orçamento de imagens/PDFs, consultas do painel e WCAG/foco/tabelas corrigidos. Leia EXCLUSAO_RETENCAO antes de qualquer uso administrativo.
 

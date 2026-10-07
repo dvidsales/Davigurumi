@@ -53,4 +53,4 @@ Controle de exclusão sem endpoint público: prévia, suspensão prévia, regist
 
 Importação recusa origem/destino excluídos; sessões e portal verificam tombstones e falham fechados em produção sem configuração. Envios pendentes respeitam exclusão/suspensão/opt-out; corpo de e-mail não inclui dados internos. Cotas também protegem cópias do demo/importações. Foco de teclado, contraste e tabelas roláveis foram revistos; emulação e auditoria automática não substituem aparelhos/leitor de tela reais.
 
-`check_readiness` é uma prévia local dos requisitos de produção, sem deploy; `--strict` falha quando incompletos. O cloud continua corretamente identificado como desenvolvimento, sem requisitos de produção concluídos. Alterações desta continuidade são locais, sem push/novo PR.
+`check_readiness` é uma prévia local dos requisitos de produção, sem deploy; `--strict` falha quando incompletos. O cloud continua corretamente identificado como desenvolvimento, sem requisitos de produção concluídos. Alterações desta continuidade estão na branch `feat/privacy-and-local-testing`, para revisão, sem deploy.

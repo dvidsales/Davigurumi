@@ -56,7 +56,7 @@ SMTP testado com backend em memória/falha simulada, sem e-mail externo real. O 
 
 Jornada ampliada no Chromium confirmou despesa de R$5 e reversão, recuperação física de 10 g (estoque 468), arquivamento/reativação, calendário e comparação. Novo backup `davigurumi-security-20261007` restaurado em `davigurumi_restore_security_20261007`, com objetos privados conferidos por hash e estoque reconciliado sem divergências. A base original foi preservada.
 
-## Continuidade essencial local — sem GitHub
+## Continuidade essencial — validação local
 
 Resultado final: **160 testes passaram no PostgreSQL; 155 passaram no SQLite e 5 foram ignorados**. Novos contratos cobrem exclusão completa/arquivo órfão, preservação de outra conta/arquivo, ausência/corrupção do registro externo, bloqueio de pacote antigo e portal/sessão restaurados, reaplicação, mensagens pendentes e cotas de criação/importação/armazenamento. Guardas PostgreSQL permanecem ativos após a manutenção. Expiração de backups testada somente em diretórios temporários; prévia preserva tudo e execução não remove pastas desconhecidas/recentes/com registro adicional.
 
@@ -68,4 +68,4 @@ Carga HTTP pequena, autenticada e sintética: 48 leituras, 4 simultâneas, p50 7
 
 `check_readiness` identifica corretamente configuração de desenvolvimento como não pronta para abertura. Segredos/registro independente, hospedagem, SMTP, TLS/usuário de banco restrito e backup externo continuam dependentes da operação escolhida. A política de retenção necessita aprovação real; testes não estabelecem prazo legal. Roteiro de dispositivos em [TESTES_DISPOSITIVOS](TESTES_DISPOSITIVOS.md).
 
-Nenhuma alteração desta seção foi enviada ao GitHub; nenhum deploy/merge foi realizado.
+O código desta continuidade foi enviado para revisão na branch `feat/privacy-and-local-testing`, após autorização do usuário. Nenhum deploy ou merge desta continuidade foi realizado.

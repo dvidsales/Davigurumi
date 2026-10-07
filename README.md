@@ -6,7 +6,7 @@ Aplicação web em **Python 3.12 / Django 5.2**, em português, para organizar t
 
 Pré-requisitos: **Python 3.12**, VS Code e a extensão **Python** da Microsoft. Para começar, SQLite é suficiente: não precisa instalar Docker ou PostgreSQL. Os testes de locks/triggers de produção usam PostgreSQL separadamente.
 
-Abra no VS Code a pasta do código que contém `manage.py` (`Arquivo → Abrir Pasta`). Se estiver usando o pacote local disponibilizado no chat, extraia-o em **uma pasta nova**, sem sobrescrever seu checkout ou dados existentes. As últimas melhorias ficaram neste ambiente e não foram enviadas ao GitHub; baixar somente a `main` pode não incluir essa continuidade.
+Abra no VS Code a pasta do código que contém `manage.py` (`Arquivo → Abrir Pasta`). Se estiver usando o pacote local disponibilizado no chat, extraia-o em **uma pasta nova**, sem sobrescrever seu checkout ou dados existentes. As últimas melhorias estão na branch `feat/privacy-and-local-testing`, em revisão; baixar somente a `main` só as incluirá depois do merge.
 
 Abra `Terminal → Novo Terminal` e confira a versão:
 
@@ -85,7 +85,7 @@ python manage.py makemigrations --check --dry-run
 python manage.py test
 ```
 
-No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. A etapa publicada teve CI PostgreSQL aprovada no GitHub. A continuidade local mais recente passou 160 testes PostgreSQL e 155 SQLite, com 5 específicos ignorados; ela não foi enviada ao GitHub. Consulte [VALIDACAO](docs/VALIDACAO.md) para distinguir as evidências locais e remotas.
+No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. A etapa publicada teve CI PostgreSQL aprovada no GitHub. A continuidade local mais recente passou 160 testes PostgreSQL e 155 SQLite, com 5 específicos ignorados; ela está na branch `feat/privacy-and-local-testing`, aguardando revisão. Consulte [VALIDACAO](docs/VALIDACAO.md) para distinguir as evidências locais e remotas.
 
 O teste de navegador exige Playwright, Chromium e **servidor ligado a uma base descartável separada**. Não execute no banco onde guarda dados próprios. Veja [VALIDACAO](docs/VALIDACAO.md).
 
@@ -108,4 +108,4 @@ A [especificação original extraída](docs/ESPECIFICACAO_ORIGINAL.txt) é refer
 
 Senhas novas exigem 12 caracteres. Em **Segurança da conta**, pode-se alterar senha, revogar todos os links e suspender acesso, incluindo demonstração. Suspensão preserva o histórico e não substitui eliminação/anonimização.
 
-A continuidade local acrescenta exclusão administrativa com prévia e tombstones externos, reaplicação após restauração, expiração de backups locais e cotas por conta. Procedimentos e limites em [EXCLUSAO_RETENCAO](docs/EXCLUSAO_RETENCAO.md). O roteiro para computador/celular/tablet está em [TESTES_DISPOSITIVOS](docs/TESTES_DISPOSITIVOS.md). Essas alterações não foram publicadas no GitHub.
+A continuidade local acrescenta exclusão administrativa com prévia e tombstones externos, reaplicação após restauração, expiração de backups locais e cotas por conta. Procedimentos e limites em [EXCLUSAO_RETENCAO](docs/EXCLUSAO_RETENCAO.md). O roteiro para computador/celular/tablet está em [TESTES_DISPOSITIVOS](docs/TESTES_DISPOSITIVOS.md). Essas alterações estão na branch `feat/privacy-and-local-testing`; não houve deploy público.
