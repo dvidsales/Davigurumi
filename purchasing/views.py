@@ -227,3 +227,34 @@ def edit_item(request, pk):
             "remove_allowed": row.purchase.status == "draft",
         },
     )
+
+
+@never_cache
+@login_required
+def allocation(request, pk):
+    from .forms import AllocationForm
+
+    purchase = get_object_or_404(Purchase, pk=pk, owner=request.user)
+    if purchase.status != "draft":
+        return redirect("purchasing:detail", pk=pk)
+    form = AllocationForm(request.POST or None, purchase=purchase)
+    if request.method == "POST" and form.is_valid():
+        try:
+            services.confirm_purchase(
+                owner=request.user,
+                purchase_id=pk,
+                manual_allocations=form.allocations(),
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            return redirect("purchasing:detail", pk=pk)
+    return render(
+        request,
+        "generic_form.html",
+        {
+            "form": form,
+            "heading": "Revisar rateio e confirmar compra",
+            "description": f"Total da compra: R$ {purchase.total:.2f}. No método manual, informe o custo final completo por item, incluindo sua parte do frete e desconto. No proporcional, os valores manuais são ignorados. A confirmação congela os custos antes do recebimento.",
+        },
+    )

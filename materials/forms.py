@@ -23,6 +23,27 @@ class MaterialForm(forms.ModelForm):
         help_text="Deixe em branco se desconhecido. Zero significa custo conhecido igual a zero.",
     )
 
+    minimum_stock = forms.DecimalField(
+        label="Estoque mínimo disponível",
+        required=False,
+        min_value=0,
+        max_digits=12,
+        decimal_places=6,
+        initial=0,
+        help_text="Na unidade de estoque. Zero desativa o alerta de mínimo; reservas reduzem o saldo disponível.",
+    )
+
+    def clean_minimum_stock(self):
+        minimum = self.cleaned_data.get("minimum_stock") or Decimal(0)
+        if (
+            self.cleaned_data.get("unit") == Material.Unit.PIECE
+            and minimum != minimum.to_integral_value()
+        ):
+            raise forms.ValidationError(
+                "O mínimo de materiais em unidades precisa ser inteiro."
+            )
+        return minimum
+
     class Meta:
         model = Material
         fields = (
@@ -33,6 +54,10 @@ class MaterialForm(forms.ModelForm):
             "color",
             "color_code",
             "tex",
+            "composition",
+            "thickness",
+            "recommended_hook",
+            "minimum_stock",
             "notes",
         )
         widgets = {"notes": forms.Textarea(attrs={"rows": 3})}

@@ -207,3 +207,96 @@ class DraftEditingTests(TestCase):
                 quantity=D("1"),
                 unit_price=D(".1"),
             )
+
+
+class ManualAllocationTests(TestCase):
+    setUp = PurchaseTests.setUp
+
+    def test_manual_costs_freeze_and_receipts_use_each_cost(self):
+        second = add_item(
+            owner=self.owner,
+            purchase_id=self.purchase.pk,
+            material_id=self.material.pk,
+            quantity=D("50"),
+            unit_price=D(".2"),
+        )
+        costs = {self.item.pk: D("12"), second.pk: D("18")}
+        confirm_purchase(
+            owner=self.owner, purchase_id=self.purchase.pk, manual_allocations=costs
+        )
+        self.purchase.refresh_from_db()
+        self.assertEqual(self.purchase.allocation_mode, "manual")
+        self.assertEqual(self.material.physical_stock, 0)
+        confirm_purchase(
+            owner=self.owner, purchase_id=self.purchase.pk, manual_allocations=costs
+        )
+        with self.assertRaises(ValidationError):
+            confirm_purchase(
+                owner=self.owner,
+                purchase_id=self.purchase.pk,
+                manual_allocations={self.item.pk: D("13"), second.pk: D("17")},
+            )
+        receive_purchase(
+            owner=self.owner,
+            purchase_id=self.purchase.pk,
+            quantities={self.item.pk: D("100"), second.pk: D("50")},
+            key=uuid.uuid4(),
+        )
+        self.assertEqual(
+            set(self.material.layers.values_list("unit_cost", flat=True)),
+            {D(".12"), D(".36")},
+        )
+
+    def test_invalid_or_foreign_costs_leave_draft_unchanged(self):
+        invalid = [
+            {self.item.pk: D("19")},
+            {uuid.uuid4(): D("20")},
+            {self.item.pk: D("20.001")},
+            {self.item.pk: D("NaN")},
+        ]
+        for costs in invalid:
+            with self.subTest(costs=costs), self.assertRaises(ValidationError):
+                confirm_purchase(
+                    owner=self.owner,
+                    purchase_id=self.purchase.pk,
+                    manual_allocations=costs,
+                )
+        self.purchase.refresh_from_db()
+        self.item.refresh_from_db()
+        self.assertEqual(self.purchase.status, "draft")
+        self.assertIsNone(self.item.allocated_cost)
+        self.assertEqual(self.material.physical_stock, 0)
+
+    def test_zero_price_items_can_allocate_freight_manually(self):
+        purchase = Purchase.objects.create(
+            owner=self.owner, date=timezone.localdate(), freight=D("7")
+        )
+        item = add_item(
+            owner=self.owner,
+            purchase_id=purchase.pk,
+            material_id=self.material.pk,
+            quantity=D("10"),
+            unit_price=D("0"),
+        )
+        confirm_purchase(
+            owner=self.owner,
+            purchase_id=purchase.pk,
+            manual_allocations={item.pk: D("7")},
+        )
+        item.refresh_from_db()
+        self.assertEqual(item.allocated_cost, D("7"))
+
+    def test_allocation_view_checks_owner_and_validation(self):
+        from django.urls import reverse
+
+        url = reverse("purchasing:allocation", args=[self.purchase.pk])
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.assertEqual(self.client.post(url, {"mode": "manual"}).status_code, 404)
+        self.client.force_login(self.owner)
+        invalid = self.client.post(
+            url, {"mode": "manual", f"cost_{self.item.pk}": "19"}
+        )
+        self.assertContains(invalid, "A soma")
+        valid = self.client.post(url, {"mode": "manual", f"cost_{self.item.pk}": "20"})
+        self.assertEqual(valid.status_code, 302)

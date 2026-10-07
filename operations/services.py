@@ -66,11 +66,18 @@ def generate_alerts(owner, today=None):
     from materials.models import Material
     from production.models import Order
     from finance.services import installment_balances
-    from .reporting import replenishment
+    from .reporting import replenishment, below_minimum
 
     today = today or timezone.localdate()
     get_user_model().objects.select_for_update().get(pk=owner.pk)
     before = Notification.objects.filter(owner=owner).count()
+    for row in below_minimum(owner):
+        emit(
+            owner=owner,
+            kind="minimum_stock:" + today.isoformat(),
+            object_id=row["material"].pk,
+            message=f"Estoque abaixo do mínimo: {row['material'].name}, disponível {row['available']} {row['material'].unit}; mínimo {row['material'].minimum_stock}.",
+        )
     for row in replenishment(owner):
         emit(
             owner=owner,

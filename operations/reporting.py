@@ -6,10 +6,34 @@ from django.utils import timezone
 from finance.models import Payment, Refund
 from materials.models import Material, StockReservation
 from production.models import Order, ProductionSession
-from sales.models import QuoteVersion
+from sales.models import QuoteVersion, Client
+from projects.models import Project
 
 
 class PeriodForm(forms.Form):
+    status = forms.ChoiceField(
+        label="Produção",
+        required=False,
+        choices=[("", "Todas")] + Order._meta.get_field("status").choices,
+    )
+    client = forms.ModelChoiceField(
+        label="Cliente",
+        queryset=Client.objects.none(),
+        required=False,
+        empty_label="Todos",
+    )
+    project = forms.ModelChoiceField(
+        label="Projeto",
+        queryset=Project.objects.none(),
+        required=False,
+        empty_label="Todos",
+    )
+
+    def __init__(self, *args, owner, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["client"].queryset = Client.objects.filter(owner=owner)
+        self.fields["project"].queryset = Project.objects.filter(owner=owner)
+
     start = forms.DateField(
         label="De", widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"})
     )
@@ -110,4 +134,100 @@ def overview(owner):
         .first(),
         "cash": cash_period(owner, today.replace(day=1), today),
         "shortages": replenishment(owner),
+        "below_minimum": below_minimum(owner),
     }
+
+
+REPORT_HEADERS = [
+    "pedido",
+    "cliente",
+    "criacao",
+    "producao",
+    "entrega",
+    "total_atual",
+    "recebido_liquido_historico",
+    "saldo_atual",
+    "credito_atual",
+]
+
+
+def order_report_rows(orders):
+    from portability.tables import safe_cell
+
+    for order in orders:
+        client = order.approved_version.quote.client
+        yield [
+            str(order.pk),
+            safe_cell(client.name) if client else "",
+            order.created_at.isoformat(),
+            order.get_status_display(),
+            order.get_delivery_status_display(),
+            order.total,
+            order.net_received,
+            order.balance,
+            order.credit,
+        ]
+
+
+def export_order_report(orders, format):
+    from portability.views import download
+    from io import BytesIO, StringIO
+
+    if format == "xlsx":
+        from openpyxl import Workbook
+
+        book = Workbook()
+        sheet = book.active
+        sheet.title = "Pedidos"
+        sheet.append(REPORT_HEADERS)
+        for row in order_report_rows(orders):
+            sheet.append(row)
+            for cell in sheet[sheet.max_row][5:]:
+                cell.number_format = "#,##0.00"
+        sheet.freeze_panes = "A2"
+        sheet.auto_filter.ref = sheet.dimensions
+        for column, width in {
+            "A": 38,
+            "B": 28,
+            "C": 34,
+            "D": 18,
+            "E": 22,
+            "F": 18,
+            "G": 30,
+            "H": 18,
+            "I": 18,
+        }.items():
+            sheet.column_dimensions[column].width = width
+        output = BytesIO()
+        book.save(output)
+        return download(
+            output.getvalue(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "pedidos.xlsx",
+        )
+    import csv
+
+    output = StringIO()
+    writer = csv.writer(output, delimiter=";")
+    writer.writerow(REPORT_HEADERS)
+    writer.writerows(order_report_rows(orders))
+    return download(
+        "\ufeff" + output.getvalue(), "text/csv; charset=utf-8", "pedidos.csv"
+    )
+
+
+def below_minimum(owner):
+    rows = []
+    for material in Material.objects.filter(
+        owner=owner, minimum_stock__gt=0
+    ).prefetch_related("movements", "layers"):
+        available = material.available_stock
+        if available < material.minimum_stock:
+            rows.append(
+                {
+                    "material": material,
+                    "available": available,
+                    "quantity": material.minimum_stock - available,
+                }
+            )
+    return rows

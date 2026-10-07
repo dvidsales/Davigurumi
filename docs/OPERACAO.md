@@ -25,7 +25,7 @@ bash scripts/with_postgres.sh manage.py generate_alerts
 bash scripts/with_postgres.sh manage.py deliver_notifications
 ```
 
-O primeiro gera alertas internos de reposição, prazo de produção em até dois dias e parcelas em até três dias, com deduplicação por dia/evento. Não percorre contas demo. O segundo processa até 50 mensagens pendentes e registra retentativas em falha. Nenhum comando instala agendador. É necessário executar periodicamente em produção; ainda não há cron/worker contínuo. Opt-in por e-mail é desabilitado por padrão.
+O primeiro gera alertas internos de estoque abaixo do mínimo configurado, reposição para pedidos, prazo de produção em até dois dias e parcelas em até três dias, com deduplicação por dia/evento. Não percorre contas demo. O segundo processa até 50 mensagens pendentes e registra retentativas em falha. Nenhum comando instala agendador. É necessário executar periodicamente em produção; ainda não há cron/worker contínuo. Opt-in por e-mail é desabilitado por padrão.
 
 ## Backup e restauração isolada
 

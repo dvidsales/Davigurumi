@@ -44,6 +44,11 @@ class Purchase(models.Model):
         ],
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    allocation_mode = models.CharField(
+        max_length=10,
+        default="auto",
+        choices=[("auto", "Proporcional"), ("manual", "Manual")],
+    )
 
     class Meta:
         ordering = ["-created_at", "id"]

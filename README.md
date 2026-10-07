@@ -30,13 +30,13 @@ SQLite e PostgreSQL são bases separadas. Os cadastros anteriores do SQLite fora
 ## Fluxos implementados
 
 - Contas, sessões, CSRF, recuperação de senha, limite de tentativas compartilhado por banco e isolamento de dados por proprietário.
-- Materiais, custo desconhecido, estoque inicial, conversões versionadas, camadas/lotes, reservas, perdas, consumo explícito e reconciliação do histórico.
-- Fornecedores, compras em rascunho, edição, frete/desconto rateados, recebimento parcial e repetição sem duplicar entradas.
+- Materiais com composição, espessura, agulha recomendada e mínimo opcional, custo desconhecido, estoque inicial, conversões versionadas, camadas/lotes, reservas, perdas, consumo explícito e reconciliação do histórico.
+- Fornecedores, compras em rascunho, edição, frete/desconto com rateio proporcional ou manual confirmado por item, recebimento parcial e repetição sem duplicar entradas.
 - Projetos com revisões preservadas, materiais alternativos escolhidos explicitamente e cálculo Decimal de mão de obra, markup/margem, taxas e descontos.
 - Clientes, orçamentos com vários itens, snapshots públicos/privados, PDFs congelados, imagens privadas e publicadas por seleção, links com expiração/revogação e aceite explícito por versão.
 - Pedidos a partir de aceite, aditivos aprovados, reserva de materiais, cronômetro persistido, correções com motivo, consumo, produção/entrega parciais e estados separados de produção, entrega e financeiro.
 - Recebimentos manuais, sinal antes do pedido sem duplicação, parcelas previstas, reembolsos vinculados, excedentes confirmados e caixa por período.
-- Painel, relatórios CSV, reposição, notificações internas, outbox com retentativas de e-mail e comando de alertas com deduplicação.
+- Painel, relatórios CSV/XLSX de pedidos com filtros por cliente/projeto/produção, reposição e mínimo de estoque, notificações internas, outbox com retentativas de e-mail e comando de alertas com deduplicação.
 - Importação CSV/XLSX com mapeamento, prévia e confirmação atômica; exportação de materiais e pacote relacional completo com imagens.
 - Demonstração em proprietário separado e cópia seletiva de cadastros, sem estoque/custos/pagamentos fictícios.
 - Manifesto PWA, cache restrito a arquivos estáticos e aviso de falta de conexão. Operações privadas precisam do servidor.
