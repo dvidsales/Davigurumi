@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}Entrar · Davigurumi{% endblock %}
+{% block content %}
+<section class="auth-intro"><span class="eyebrow">DO MATERIAL À SUA PRÓXIMA CRIAÇÃO</span><h1>Seu trabalho merece<br>organização e valor.</h1><p>Conheça seus materiais, acompanhe o que já possui e calcule preços com mais clareza.</p><div class="intro-note">Uma ferramenta para diferentes técnicas.<br>Um espaço só seu.</div></section>
+<section class="card auth-card"><h2>Bem-vindo de volta</h2><p class="muted">Entre para continuar organizando suas criações.</p>
+<form method="post">{% csrf_token %}{% include 'form_fields.html' %}{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}<button class="button full" type="submit">Entrar</button></form>
+<p><a href="{% url 'password_reset' %}">Esqueci minha senha</a></p><p class="auth-footer">Primeira vez aqui? <a href="{% url 'signup' %}">Criar minha conta</a></p></section>
+{% endblock %}
