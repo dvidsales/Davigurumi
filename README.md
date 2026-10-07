@@ -6,7 +6,7 @@ Aplicação web em **Python 3.12 / Django 5.2**, em português, para organizar t
 
 Pré-requisitos: **Python 3.12**, VS Code e a extensão **Python** da Microsoft. Para começar, SQLite é suficiente: não precisa instalar Docker ou PostgreSQL. Os testes de locks/triggers de produção usam PostgreSQL separadamente.
 
-Abra no VS Code a pasta do código que contém `manage.py` (`Arquivo → Abrir Pasta`). Se estiver usando o pacote local disponibilizado no chat, extraia-o em **uma pasta nova**, sem sobrescrever seu checkout ou dados existentes. As últimas melhorias estão na branch `feat/usability-feedback`, com ajustes do feedback de interface; baixar somente a `main` só as incluirá depois do merge.
+Abra no VS Code a pasta do código que contém `manage.py` (`Arquivo → Abrir Pasta`). Se estiver usando o pacote local disponibilizado no chat, extraia-o em **uma pasta nova**, sem sobrescrever seu checkout ou dados existentes. As últimas melhorias estão na branch `feat/usability-feedback`, com ajustes do feedback de interface no [PR #6](https://github.com/dvidsales/Davigurumi/pull/6); baixar somente a `main` só as incluirá depois do merge.
 
 Abra `Terminal → Novo Terminal` e confira a versão:
 
@@ -85,7 +85,7 @@ python manage.py makemigrations --check --dry-run
 python manage.py test
 ```
 
-No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. A etapa publicada teve CI PostgreSQL aprovada no GitHub. A continuidade local mais recente passou 160 testes PostgreSQL e 155 SQLite, com 5 específicos ignorados; ela está na branch `feat/usability-feedback`, aguardando revisão. Consulte [VALIDACAO](docs/VALIDACAO.md) para distinguir as evidências locais e remotas.
+No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. A etapa publicada teve CI PostgreSQL aprovada no GitHub. A revisão mais recente passou 164 testes PostgreSQL e 159 SQLite, com 5 específicos ignorados; ela está na branch `feat/usability-feedback`, aguardando revisão. Consulte [VALIDACAO](docs/VALIDACAO.md) para distinguir as evidências locais e remotas.
 
 O teste de navegador exige Playwright, Chromium e **servidor ligado a uma base descartável separada**. Não execute no banco onde guarda dados próprios. Veja [VALIDACAO](docs/VALIDACAO.md).
 

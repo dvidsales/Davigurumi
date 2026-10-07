@@ -1,6 +1,6 @@
 # Estado para continuidade — 07/10/2026
 
-Repositório `/workspace/Davigurumi`, branch `feat/privacy-and-local-testing`, baseada em `origin/main` (`66a5c66`). PRs #1–#4 incorporados. A continuidade de privacidade, cotas e testes locais está no [PR #5](https://github.com/dvidsales/Davigurumi/pull/5), aberto para revisão após autorização de envio ao GitHub. Não apagar `.local/` ou recriar o projeto. O usuário pediu manter a aplicação fora de uso público; nenhum merge ou deploy desta continuidade foi autorizado.
+Repositório `/workspace/Davigurumi`, branch `feat/usability-feedback`. PRs #1–#5 incorporados à main. Os ajustes do feedback de interface estão no [PR #6](https://github.com/dvidsales/Davigurumi/pull/6), aberto para revisão. Não apagar `.local/` ou recriar o projeto. O usuário pediu manter a aplicação fora de uso público; nenhum merge ou deploy desta continuidade foi autorizado.
 
 O app evoluiu de contas/materiais/calculadora para os módulos documentados no README. PostgreSQL 17 foi iniciado e validado em Docker. SQLite anterior continua disponível e recebeu migrações compatíveis. Ambos são bancos diferentes.
 
