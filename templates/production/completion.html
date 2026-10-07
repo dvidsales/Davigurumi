@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<header class="page-heading"><div><a href="{% url 'production:detail' order.pk %}">← Voltar ao pedido</a><h1>Conferir e finalizar encomenda</h1><p>Orçamento {{ order.approved_version.quote.number }} · {{ order.approved_version.quote.client|default:'Cliente não informado' }}</p></div></header>
+<form method="post">{% csrf_token %}{{ form.non_field_errors }}{% for hidden in form.hidden_fields %}{{ hidden }}{{ hidden.errors }}{% endfor %}
+<section class="card quote-section"><h2>Peças e entrega</h2><p>Preenchemos a produção total e o que falta entregar. Confirme apenas se as peças estão prontas e serão entregues agora. Para entregar depois, informe 0 em “Entregar agora”.</p>{{ rows.management_form }}{{ rows.non_form_errors }}
+{% for item, row in item_rows %}<article class="movement"><h3>{{ item.description }}</h3><p>Pedido: {{ item.quantity }} · Produção registrada: {{ item.produced }} · Já entregue: {{ item.delivered }}</p>{% include "form_fields.html" with form=row %}</article>{% endfor %}
+<div class="field">{{ form.complete.label_tag }}{{ form.complete }}{{ form.complete.errors }}</div><p class="muted">Para registrar uma etapa parcial, desmarque a conclusão. Consumos e tempo de trabalho usam seus registros reais; confira-os no pedido antes de concluir. Reservas restantes serão liberadas.</p></section>
+<section class="card quote-section"><h2>Recebimento</h2><p>Total: R$ {{ order.total|floatformat:2 }} · Recebido líquido: R$ {{ order.net_received|floatformat:2 }} · Saldo: R$ {{ order.balance|floatformat:2 }}</p><div class="field">{{ form.receive_payment.label_tag }}{{ form.receive_payment }}{{ form.receive_payment.errors }}</div><p>O saldo foi sugerido. Ajuste para o valor realmente recebido e confira a data e o meio de pagamento. Sem marcar a confirmação acima, nenhum recebimento será lançado.</p>
+{% for field in form.visible_fields %}{% if field.name != 'complete' and field.name != 'receive_payment' %}<div class="field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}</section>
+<div class="form-actions"><button class="button">Confirmar dados conferidos</button><a href="{% url 'production:detail' order.pk %}">Voltar sem registrar</a></div></form>
+{% endblock %}

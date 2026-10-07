@@ -2,6 +2,7 @@ import uuid
 from decimal import Decimal
 from django import forms
 from django.utils import timezone
+from finance.forms import PaymentForm
 from .models import ActualExpense
 from materials.models import Material, StockReservation
 
@@ -133,3 +134,34 @@ class ExpenseForm(forms.Form):
         self.fields["reverses"].label_from_instance = (
             lambda obj: f"{obj.description}: R$ {obj.amount:.2f}"
         )
+
+
+class CompletionItemForm(forms.Form):
+    item_id = forms.UUIDField(widget=forms.HiddenInput)
+    produced = forms.IntegerField(label="Total produzido", min_value=0, max_value=10000)
+    delivery = forms.IntegerField(label="Entregar agora", min_value=0, max_value=10000)
+
+
+class CompletionForm(PaymentForm):
+    state = forms.CharField(widget=forms.HiddenInput)
+    complete = forms.BooleanField(
+        label="Concluir a produção deste pedido", required=False, initial=True
+    )
+    receive_payment = forms.BooleanField(
+        label="Confirmo que recebi o valor abaixo", required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("amount", "date", "method"):
+            self.fields[name].required = False
+
+    def clean(self):
+        data = super().clean()
+        if data.get("receive_payment"):
+            for name in ("amount", "date", "method"):
+                if not data.get(name):
+                    self.add_error(
+                        name, "Confira este dado para registrar o recebimento."
+                    )
+        return data

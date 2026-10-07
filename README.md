@@ -6,7 +6,7 @@ Aplicação web em **Python 3.12 / Django 5.2**, em português, para organizar t
 
 Pré-requisitos: **Python 3.12**, VS Code e a extensão **Python** da Microsoft. Para começar, SQLite é suficiente: não precisa instalar Docker ou PostgreSQL. Os testes de locks/triggers de produção usam PostgreSQL separadamente.
 
-Abra no VS Code a pasta do código que contém `manage.py` (`Arquivo → Abrir Pasta`). Se estiver usando o pacote local disponibilizado no chat, extraia-o em **uma pasta nova**, sem sobrescrever seu checkout ou dados existentes. As últimas melhorias estão na branch `feat/usability-feedback`, com ajustes do feedback de interface no [PR #6](https://github.com/dvidsales/Davigurumi/pull/6); baixar somente a `main` só as incluirá depois do merge.
+Abra no VS Code a pasta do código que contém `manage.py` (`Arquivo → Abrir Pasta`). Se estiver usando o pacote local disponibilizado no chat, extraia-o em **uma pasta nova**, sem sobrescrever seu checkout ou dados existentes. Os ajustes de interface anteriores já estão na `main`. A conclusão simplificada da encomenda está na branch `feat/confirm-order-completion`; a `main` só a incluirá depois do merge.
 
 Abra `Terminal → Novo Terminal` e confira a versão:
 
@@ -85,7 +85,7 @@ python manage.py makemigrations --check --dry-run
 python manage.py test
 ```
 
-No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. A etapa publicada teve CI PostgreSQL aprovada no GitHub. A revisão mais recente passou 164 testes PostgreSQL e 159 SQLite, com 5 específicos ignorados; ela está na branch `feat/usability-feedback`, aguardando revisão. Consulte [VALIDACAO](docs/VALIDACAO.md) para distinguir as evidências locais e remotas.
+No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. A etapa publicada teve CI PostgreSQL aprovada no GitHub. A revisão mais recente passou 169 testes PostgreSQL e 164 SQLite, com 5 específicos ignorados; ela está na branch `feat/confirm-order-completion`, aguardando revisão. Consulte [VALIDACAO](docs/VALIDACAO.md) para distinguir as evidências locais e remotas.
 
 O teste de navegador exige Playwright, Chromium e **servidor ligado a uma base descartável separada**. Não execute no banco onde guarda dados próprios. Veja [VALIDACAO](docs/VALIDACAO.md).
 
@@ -117,3 +117,9 @@ Cliente é cadastrado durante o novo orçamento; fornecedor durante a nova compr
 “Biblioteca de peças” guarda a ficha reutilizável (materiais, tempo e preço) e mostra os pedidos relacionados. Para publicar um orçamento, primeiro adicione uma peça; o fluxo vazio orienta cadastrar a primeira ficha e voltar ao orçamento. Publicar gera o documento/link do orçamento para o cliente; não faz deploy da aplicação.
 
 Um orçamento aprovado pelo link do cliente aparece na seção **Orçamentos aprovados** de **Pedidos e produção**: clique em **Criar / abrir pedido** para iniciar a produção. Em **Recebimentos e caixa**, essa seção permite registrar dinheiro já recebido; o valor aprovado não entra automaticamente no caixa. As listas mostram até 20 aprovações recentes e têm acesso a todos os orçamentos.
+
+### Concluir uma encomenda sem repetir formulários
+
+No pedido, clique em **Conferir e finalizar encomenda**. A tela sugere a produção total, o restante a entregar, o saldo a receber, a data de hoje e o último meio de pagamento do pedido (Pix quando ainda não há recebimentos). Confira e confirme ou edite antes de salvar. Para entregar depois, informe zero em **Entregar agora**; para produção parcial, desmarque **Concluir a produção**. Somente marque **Confirmo que recebi o valor abaixo** se o dinheiro já foi recebido. Sem essa confirmação, nenhum pagamento é registrado. Registre os consumos reais e pause o cronômetro antes de concluir; a revisão não inventa consumo ou tempo de trabalho.
+
+O botão de recebimento separado também sugere saldo, data e meio de pagamento. Uma revisão desatualizada é bloqueada para evitar sobrescrever alterações de outra aba; um reenvio idêntico não duplica entrega nem recebimento.
