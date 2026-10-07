@@ -115,3 +115,5 @@ A continuidade local acrescenta exclusão administrativa com prévia e tombstone
 Cliente é cadastrado durante o novo orçamento; fornecedor durante a nova compra. Para reutilizar, busque por nome, contato ou ID e selecione um resultado na própria página. “Pesquisar clientes/fornecedores” abre a consulta com ID e histórico associado. IDs são gerados automaticamente e os cadastros permanecem separados por conta.
 
 “Biblioteca de peças” guarda a ficha reutilizável (materiais, tempo e preço) e mostra os pedidos relacionados. Para publicar um orçamento, primeiro adicione uma peça; o fluxo vazio orienta cadastrar a primeira ficha e voltar ao orçamento. Publicar gera o documento/link do orçamento para o cliente; não faz deploy da aplicação.
+
+Um orçamento aprovado pelo link do cliente aparece na seção **Orçamentos aprovados** de **Pedidos e produção**: clique em **Criar / abrir pedido** para iniciar a produção. Em **Recebimentos e caixa**, essa seção permite registrar dinheiro já recebido; o valor aprovado não entra automaticamente no caixa. As listas mostram até 20 aprovações recentes e têm acesso a todos os orçamentos.
