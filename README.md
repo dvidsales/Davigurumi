@@ -49,7 +49,7 @@ python manage.py makemigrations --check --dry-run
 python manage.py test
 ```
 
-No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. Há CI configurada para PostgreSQL; sua execução no GitHub não foi confirmada nesta sessão.
+No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. A CI para PostgreSQL também passou no GitHub. Consulte os checks do PR para o resultado da revisão atual.
 
 O teste de navegador exige Playwright, Chromium e **servidor ligado a uma base descartável separada**. Não execute no banco onde guarda dados próprios. Veja [VALIDACAO](docs/VALIDACAO.md).
 

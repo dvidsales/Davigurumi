@@ -43,4 +43,4 @@ Primeira prova de fundação também preservou material 508 e hash de senha em b
 
 ## Limites das evidências
 
-SMTP testado com backend em memória/falha simulada, sem e-mail externo real. CI versionada, execução remota não confirmada. Não verificados: hospedagem, cobrança/cotas de fornecedor, carga de produção, dispositivos Safari/Android, push, leitor de tela, política legal/exclusão/tombstones e recuperação com perdas reais de infraestrutura.
+SMTP testado com backend em memória/falha simulada, sem e-mail externo real. CI PostgreSQL executada com sucesso no GitHub para o commit de código `9bc030d`: [execução](https://github.com/dvidsales/Davigurumi/actions/runs/37644250963). Consulte os checks do PR para revisões posteriores. Não verificados: hospedagem, cobrança/cotas de fornecedor, carga de produção, dispositivos Safari/Android, push, leitor de tela, política legal/exclusão/tombstones e recuperação com perdas reais de infraestrutura.

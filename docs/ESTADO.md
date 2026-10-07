@@ -27,4 +27,4 @@ Bancos `davigurumi_browser_20261007` e `davigurumi_restore_full_20261007` têm s
 
 Servidor/processos não são garantidos após restauração do ambiente. Inicie novamente e confira `/conta/entrar/`. Configuração de onboarding precisa ser salva/publicada pelo usuário para ativar alterações do rascunho. O conteúdo da nova branch precisa estar presente no checkout: uma tarefa em `main` antes do novo merge terá somente a fundação anterior.
 
-GitHub: API disponível; o PR #1 aparece como incorporado. O envio Git da nova branch retornou erro interno e o mesmo commit/tree foi publicado via API; PR #2 aberto. Não imprimir tokens nem pedir credenciais pelo chat.
+GitHub: API disponível; o PR #1 aparece como incorporado. O envio Git inicial da nova branch retornou erro interno e o mesmo commit/tree foi publicado via API; atualizações Git posteriores funcionaram. PR #2 aberto e CI do código passou. Não imprimir tokens nem pedir credenciais pelo chat.
