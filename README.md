@@ -2,17 +2,53 @@
 
 Aplicação web em **Python 3.12 / Django 5.2**, em português, para organizar trabalho artesanal. O desenvolvimento já cobre materiais, compras, fichas, orçamentos, portal do cliente, produção e recebimentos manuais. Use dados fictícios nesta versão. O usuário pediu manter o app fora de uso público durante a revisão de segurança; leia [SECURITY](SECURITY.md).
 
-## Começar no computador
+## Testar no VS Code
+
+Pré-requisitos: **Python 3.12**, VS Code e a extensão **Python** da Microsoft. Para começar, SQLite é suficiente: não precisa instalar Docker ou PostgreSQL. Os testes de locks/triggers de produção usam PostgreSQL separadamente.
+
+Abra no VS Code a pasta do código que contém `manage.py` (`Arquivo → Abrir Pasta`). Se estiver usando o pacote local disponibilizado no chat, extraia-o em **uma pasta nova**, sem sobrescrever seu checkout ou dados existentes. As últimas melhorias ficaram neste ambiente e não foram enviadas ao GitHub; baixar somente a `main` pode não incluir essa continuidade.
+
+Abra `Terminal → Novo Terminal` e confira a versão:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python manage.py migrate --noinput
-python manage.py runserver
+python --version
 ```
 
-O comando usa SQLite quando `POSTGRES_DB` não está definido. Crie sua conta no cadastro; não há senha padrão. A recuperação de senha usa o console de desenvolvimento. Para experimentar sem misturar exemplos e dados próprios, entre em **Demonstração** pela navegação.
+### Windows — PowerShell
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe manage.py migrate --noinput
+.\.venv\Scripts\python.exe manage.py check
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+```
+
+Não é necessário ativar o venv ou alterar a política de execução do PowerShell. Se o comando `py` não existir, use `python -m venv .venv` depois de confirmar que `python --version` mostra 3.12.
+
+### macOS ou Linux
+
+```bash
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python manage.py migrate --noinput
+.venv/bin/python manage.py check
+.venv/bin/python manage.py runserver 127.0.0.1:8000
+```
+
+Se sua instalação disponibiliza Python 3.12 como `python3`, use `python3 -m venv .venv` após conferir a versão.
+
+### Abrir e experimentar
+
+No VS Code, use `Ctrl+Shift+P` (macOS: `Cmd+Shift+P`) → **Python: Select Interpreter** e selecione o Python da `.venv`. Abra **http://127.0.0.1:8000** no navegador do computador. Mantenha o terminal do servidor aberto; para parar, use `Ctrl+C`.
+
+Crie sua conta em **Criar conta**; não há senha padrão. Use uma senha de pelo menos 12 caracteres e dados fictícios. Comece pelo menu **Demonstração**, que mantém exemplos separados dos seus cadastros. Depois siga o [roteiro de testes](docs/TESTES_DISPOSITIVOS.md).
+
+SQLite guarda dados em `.local/db.sqlite3`; uploads ficam em `.local/files`. Não apagar essas pastas para atualizar o app ou resolver um erro. `migrate` atualiza a estrutura; não é preciso executar `makemigrations` para testar. O código não carrega `.env` automaticamente e, para esse teste local básico, não é necessário copiar ou configurar esse arquivo. Se já houver `POSTGRES_DB` nas variáveis do terminal, o Django usará PostgreSQL em vez de SQLite.
+
+Recuperação de senha usa o console do servidor no desenvolvimento: o link aparece no terminal e não é enviado para seu e-mail. Não compartilhar esse link. Não executar os comandos administrativos de exclusão/expurgo com `--apply` para experimentar a interface.
+
+Se a porta 8000 estiver ocupada, use `runserver 127.0.0.1:8001` e abra essa porta no navegador. Se aparecer erro, copie a mensagem e o comando executado, sem senhas/segredos. Para testar no celular, siga a orientação de endereço privado/HTTPS do roteiro; `127.0.0.1` no celular aponta para o próprio celular.
 
 ## Ambiente cloud atual
 
@@ -49,7 +85,7 @@ python manage.py makemigrations --check --dry-run
 python manage.py test
 ```
 
-No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. A CI para PostgreSQL também passou no GitHub. Consulte os checks do PR para o resultado da revisão atual.
+No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. A etapa publicada teve CI PostgreSQL aprovada no GitHub. A continuidade local mais recente passou 160 testes PostgreSQL e 155 SQLite, com 5 específicos ignorados; ela não foi enviada ao GitHub. Consulte [VALIDACAO](docs/VALIDACAO.md) para distinguir as evidências locais e remotas.
 
 O teste de navegador exige Playwright, Chromium e **servidor ligado a uma base descartável separada**. Não execute no banco onde guarda dados próprios. Veja [VALIDACAO](docs/VALIDACAO.md).
 
