@@ -75,9 +75,15 @@ def read_table(upload, separator=";", sheet=""):
     raw = upload.read(5 * 1024 * 1024 + 1)
     if upload.name.lower().endswith(".csv"):
         try:
-            rows = list(
-                csv.reader(StringIO(raw.decode("utf-8-sig")), delimiter=separator)
-            )
+            rows = []
+            for row in csv.reader(
+                StringIO(raw.decode("utf-8-sig")), delimiter=separator
+            ):
+                if len(rows) >= 2001 or len(row) > 40:
+                    raise ValidationError(
+                        "Limite de 2000 linhas/40 colunas por importação."
+                    )
+                rows.append(row)
         except (UnicodeError, csv.Error) as exc:
             raise ValidationError(
                 "CSV inválido. Use UTF-8 e o separador escolhido."
@@ -103,8 +109,17 @@ def read_table(upload, separator=";", sheet=""):
             selected = sheet or workbook.sheetnames[0]
             if selected not in workbook.sheetnames:
                 raise ValidationError("Aba não encontrada.")
+            if (workbook[selected].max_column or 0) > 40 or (
+                workbook[selected].max_row or 0
+            ) > 2001:
+                workbook.close()
+                raise ValidationError(
+                    "Limite de 2000 linhas/40 colunas por importação."
+                )
             rows = []
             for row in workbook[selected].iter_rows():
+                if len(row) > 40:
+                    raise ValidationError("Limite de 40 colunas por importação.")
                 if any(cell.data_type == "f" for cell in row):
                     raise ValidationError(
                         "Planilha contém fórmulas. Exporte os valores antes de importar."

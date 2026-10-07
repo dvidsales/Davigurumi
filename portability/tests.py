@@ -264,3 +264,16 @@ class ArchiveRoundTripTests(TransactionTestCase):
                         owner=owner, order_id=order.pk, version_id=amendment.pk
                     )
                 call_command("reconcile_stock", verbosity=0)
+
+
+class TableLimitTests(TestCase):
+    def test_table_limits_reject_large_dimensions_before_iteration(self):
+        workbook = Workbook()
+        workbook.active["AO2"] = "Muito larga"
+        output = BytesIO()
+        workbook.save(output)
+        with self.assertRaises(ValidationError):
+            read_table(SimpleUploadedFile("large.xlsx", output.getvalue()))
+        raw = ("nome;tipo;unidade\n" + "Fio;fio;g\n" * 2001).encode()
+        with self.assertRaises(ValidationError):
+            read_table(SimpleUploadedFile("large.csv", raw))

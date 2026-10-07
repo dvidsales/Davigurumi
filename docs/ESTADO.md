@@ -1,6 +1,6 @@
 # Estado para continuidade — 07/10/2026
 
-Repositório `/workspace/Davigurumi`, branch `feat/artisan-workflow`. O PR #1 de fundação já foi incorporado à `main`; esta evolução parte desse conteúdo e segue numa nova branch, para revisão via PR. Não fazer reset, apagar `.local/` ou recriar o projeto. Usuário autorizou desenvolvimento autônomo e PR; não autorizou deploy, serviços pagos, merge ou uso de dados reais.
+Repositório `/workspace/Davigurumi`, branch `feat/artisan-workflow`. O PR #1 de fundação já foi incorporado à `main`; esta evolução parte desse conteúdo e está no [PR #2](https://github.com/dvidsales/Davigurumi/pull/2), para revisão. Não fazer reset, apagar `.local/` ou recriar o projeto. Usuário autorizou desenvolvimento autônomo e PR; não autorizou deploy, serviços pagos, merge ou uso de dados reais.
 
 O app evoluiu de contas/materiais/calculadora para os módulos documentados no README. PostgreSQL 17 foi iniciado e validado em Docker. SQLite anterior continua disponível e recebeu migrações compatíveis. Ambos são bancos diferentes.
 
@@ -27,4 +27,4 @@ Bancos `davigurumi_browser_20261007` e `davigurumi_restore_full_20261007` têm s
 
 Servidor/processos não são garantidos após restauração do ambiente. Inicie novamente e confira `/conta/entrar/`. Configuração de onboarding precisa ser salva/publicada pelo usuário para ativar alterações do rascunho. O conteúdo da nova branch precisa estar presente no checkout: uma tarefa em `main` antes do novo merge terá somente a fundação anterior.
 
-GitHub: pushes e API estão disponíveis neste ambiente restaurado; o PR #1 aparece como incorporado. Não imprimir tokens nem pedir credenciais pelo chat.
+GitHub: API disponível; o PR #1 aparece como incorporado. O envio Git da nova branch retornou erro interno e o mesmo commit/tree foi publicado via API; PR #2 aberto. Não imprimir tokens nem pedir credenciais pelo chat.

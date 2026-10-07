@@ -4,7 +4,7 @@ Validação com dados sintéticos no cloud. Testes automatizados não substituem
 
 ## Suíte Django
 
-PostgreSQL 17 real em container: cadastro/sessão/reset, CSRF/limite de tentativas, isolamento, Decimal, estoque inicial/idempotência, camadas/FIFO/conversões, reservas, compras/parciais/rateio, revisões/alternativas, versões/PDF/imagens, tokens, aceite, aditivos, produção/timer/correções/entregas, financeiro, outbox, relatórios, imports/pacote e demo. Resultado: **96 testes passaram no PostgreSQL**; no SQLite, **93 passaram e 3 específicos de PostgreSQL foram ignorados**, sem falhas.
+PostgreSQL 17 real em container: cadastro/sessão/reset, CSRF/limite de tentativas, isolamento, Decimal, estoque inicial/idempotência, camadas/FIFO/conversões, reservas, compras/parciais/rateio, revisões/alternativas, versões/PDF/imagens, tokens, aceite, aditivos, produção/timer/correções/entregas, financeiro, outbox, relatórios, imports/pacote e demo. Resultado: **97 testes passaram no PostgreSQL**; no SQLite, **94 passaram e 3 específicos de PostgreSQL foram ignorados**, sem falhas.
 
 Concorrência efetiva em PostgreSQL: duas reservas de 80 sobre 100 aceitam somente uma; aprovação e recusa simultâneas produzem somente uma decisão. SQL direto cruzando proprietário ou alterando conteúdo publicado é rejeitado nos testes específicos. SQLite executa os contratos aplicáveis; três testes exclusivos de PostgreSQL são explicitamente ignorados.
 
