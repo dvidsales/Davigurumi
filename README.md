@@ -6,7 +6,7 @@ Aplicação web em **Python 3.12 / Django 5.2**, em português, para organizar t
 
 Pré-requisitos: **Python 3.12**, VS Code e a extensão **Python** da Microsoft. Para começar, SQLite é suficiente: não precisa instalar Docker ou PostgreSQL. Os testes de locks/triggers de produção usam PostgreSQL separadamente.
 
-Abra no VS Code a pasta do código que contém `manage.py` (`Arquivo → Abrir Pasta`). Se estiver usando o pacote local disponibilizado no chat, extraia-o em **uma pasta nova**, sem sobrescrever seu checkout ou dados existentes. As últimas melhorias estão na branch `feat/privacy-and-local-testing`, em revisão; baixar somente a `main` só as incluirá depois do merge.
+Abra no VS Code a pasta do código que contém `manage.py` (`Arquivo → Abrir Pasta`). Se estiver usando o pacote local disponibilizado no chat, extraia-o em **uma pasta nova**, sem sobrescrever seu checkout ou dados existentes. As últimas melhorias estão na branch `feat/privacy-and-local-testing`, em revisão no [PR #5](https://github.com/dvidsales/Davigurumi/pull/5); baixar somente a `main` só as incluirá depois do merge.
 
 Abra `Terminal → Novo Terminal` e confira a versão:
 
