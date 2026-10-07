@@ -21,15 +21,15 @@
     <a class="{% if request.resolver_match.app_name == 'materials' %}active{% endif %}" href="{% url 'materials:index' %}">Materiais e estoque</a>
     <a class="{% if request.resolver_match.app_name == 'pricing' %}active{% endif %}" href="{% url 'pricing:calculator' %}">Calculadora de preços</a>
     <a class="{% if request.resolver_match.app_name == 'purchasing' %}active{% endif %}" href="{% url 'purchasing:index' %}">Compras e fornecedores</a>
-    <a class="{% if request.resolver_match.app_name == 'projects' %}active{% endif %}" href="{% url 'projects:index' %}">Projetos e fichas</a>
+    <a class="{% if request.resolver_match.app_name == 'projects' %}active{% endif %}" href="{% url 'projects:index' %}">Biblioteca de peças</a>
     <a class="{% if request.resolver_match.app_name == 'sales' %}active{% endif %}" href="{% url 'sales:index' %}">Clientes e orçamentos</a>
-    <a class="{% if request.resolver_match.app_name == 'operations' %}active{% endif %}" href="{% url 'operations:index' %}">Notificações</a>
+    <a class="{% if request.resolver_match.app_name == 'operations' and request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'operations:index' %}">Notificações</a>
     <a class="{% if request.resolver_match.app_name == 'production' %}active{% endif %}" href="{% url 'production:index' %}">Pedidos e produção</a>
     <a class="{% if request.resolver_match.app_name == 'finance' %}active{% endif %}" href="{% url 'finance:index' %}">Recebimentos e caixa</a>
     <a class="{% if request.resolver_match.app_name == 'portability' %}active{% endif %}" href="{% url 'portability:index' %}">Importar e exportar</a>
-    <a href="{% url 'operations:reports' %}">Relatórios e reposição</a>
-    <a href="{% url 'demo' %}">Demonstração</a>
-    <a href="{% url 'account_security' %}">Segurança da conta</a>
+    <a class="{% if request.resolver_match.app_name == 'operations' and request.resolver_match.url_name != 'index' %}active{% endif %}" href="{% url 'operations:reports' %}">Relatórios e reposição</a>
+    <a class="{% if request.resolver_match.url_name == 'demo' %}active{% endif %}" href="{% url 'demo' %}">Demonstração</a>
+    <a class="{% if request.path|slice:":7" == '/conta/' %}active{% endif %}" href="{% url 'account_security' %}">Segurança da conta</a>
   </nav>
   <div class="sidebar-bottom"><span class="version">VERSÃO INICIAL · DESENVOLVIMENTO</span>
     <p>{{ user.first_name|default:user.username }}</p>
@@ -41,7 +41,7 @@
 {% endif %}
 <main id="conteudo" class="{% if user.is_authenticated %}workspace{% else %}auth-main{% endif %}">
   <p id="connection-status" class="notice" role="status" hidden></p>
-  {% if request.demo_workspace %}<p class="notice warning">DEMONSTRAÇÃO · Dados fictícios em um espaço separado. <a href="{% url 'demo' %}">Voltar à conta real ou copiar cadastros escolhidos</a></p>{% endif %}
+  {% if request.demo_workspace %}<p class="notice warning">DEMONSTRAÇÃO · Dados fictícios em um espaço separado. <a class="{% if request.resolver_match.url_name == 'demo' %}active{% endif %}" href="{% url 'demo' %}">Voltar à conta real ou copiar cadastros escolhidos</a></p>{% endif %}
   {% if messages %}<div aria-live="polite">{% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}</div>{% endif %}
   {% block content %}{% endblock %}
 </main>

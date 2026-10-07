@@ -15,6 +15,12 @@ class QuoteForm(forms.Form):
     client = forms.ModelChoiceField(
         label="Cliente", queryset=Client.objects.none(), required=False
     )
+    new_client_name = forms.CharField(
+        label="Nome do novo cliente", max_length=160, required=False
+    )
+    new_client_contact = forms.CharField(
+        label="Contato do novo cliente", max_length=160, required=False
+    )
     terms = forms.CharField(
         label="Condições para o cliente",
         max_length=3000,
@@ -30,9 +36,16 @@ class QuoteForm(forms.Form):
         label="Validade em dias após publicação", min_value=1, max_value=365, initial=15
     )
 
-    def __init__(self, *args, owner, **kwargs):
+    def __init__(self, *args, owner, contact_query="", **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["client"].queryset = Client.objects.filter(owner=owner)
+        from accounts.partners import contact_choices
+
+        contact_choices(self, "client", Client, owner, contact_query)
+
+    def clean(self):
+        from accounts.partners import validate_contact
+
+        return validate_contact(super().clean(), "client")
 
 
 class QuoteItemForm(forms.Form):

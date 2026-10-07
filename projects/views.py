@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.cache import never_cache
 from .models import Project, ProjectMaterial
 from .forms import ProjectForm, MaterialLineForm, AlternativeForm
+from production.models import Order
 from . import services
 
 
@@ -26,6 +27,22 @@ def index(request):
 @never_cache
 @login_required
 def create(request):
+    next_version = None
+    if request.GET.get("next_version"):
+        from sales.models import QuoteVersion
+        from django.http import Http404
+        import uuid
+
+        try:
+            next_id = uuid.UUID(request.GET["next_version"])
+        except ValueError:
+            raise Http404
+        next_version = get_object_or_404(
+            QuoteVersion,
+            pk=next_id,
+            quote__owner=request.user,
+            published_at__isnull=True,
+        )
     form = ProjectForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         values = form.cleaned_data.copy()
@@ -39,13 +56,21 @@ def create(request):
                 None, exc.messages if isinstance(exc, ValidationError) else str(exc)
             )
         else:
+            if next_version:
+                from django.urls import reverse
+
+                return redirect(
+                    reverse("sales:item", args=[next_version.pk])
+                    + "?project="
+                    + str(project.pk)
+                )
             return redirect("projects:detail", pk=project.pk)
     return render(
         request,
         "generic_form.html",
         {
             "form": form,
-            "heading": "Novo projeto",
+            "heading": "Cadastrar peça na biblioteca",
             "description": "A ficha é genérica: crochê, costura e outras técnicas.",
         },
     )
@@ -69,6 +94,13 @@ def detail(request, pk):
             "project": project,
             "revision": project.current_revision,
             "snapshot": snapshot,
+            "related_orders": __import__("production.models", fromlist=["Order"])
+            .Order.objects.filter(
+                owner=request.user,
+                items__source_item__project_revision__project=project,
+            )
+            .distinct()
+            .select_related("approved_version__quote")[:20],
         },
     )
 

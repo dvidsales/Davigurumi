@@ -10,6 +10,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from .models import Purchase, PurchaseItem, Supplier
 from .forms import PurchaseForm, SupplierForm, ItemForm, ReceiveForm
+from accounts.partners import search_contacts
 from . import services
 
 
@@ -31,7 +32,11 @@ def index(request):
 @never_cache
 @login_required
 def create(request):
-    form = PurchaseForm(request.POST or None, owner=request.user)
+    form = PurchaseForm(
+        request.POST or None,
+        owner=request.user,
+        contact_query=request.GET.get("contact_q", ""),
+    )
     if request.method == "POST" and form.is_valid():
         purchase = form.save(commit=False)
         purchase.owner = request.user
@@ -40,6 +45,15 @@ def create(request):
                 from accounts.quotas import ensure_capacity
 
                 ensure_capacity(request.user, "purchasing.purchase")
+                if form.cleaned_data["new_supplier_name"]:
+                    from accounts.partners import register_contact
+
+                    purchase.supplier = register_contact(
+                        Supplier,
+                        request.user,
+                        form.cleaned_data["new_supplier_name"],
+                        form.cleaned_data["new_supplier_contact"],
+                    )
                 purchase.save()
         except ValidationError as exc:
             form.add_error(None, exc)
@@ -47,9 +61,15 @@ def create(request):
             return redirect("purchasing:detail", pk=purchase.pk)
     return render(
         request,
-        "generic_form.html",
+        "contact_workflow.html",
         {
             "form": form,
+            "contact_field": form["supplier"],
+            "new_name": form["new_supplier_name"],
+            "new_contact": form["new_supplier_contact"],
+            "contact_title": "Fornecedor",
+            "contact_query": request.GET.get("contact_q", ""),
+            "directory_url": "/compras/fornecedores/",
             "heading": "Nova compra",
             "description": "Criar rascunho não altera estoque. Adicione itens, confirme e registre o recebimento real.",
         },
@@ -75,8 +95,20 @@ def suppliers(request):
             return redirect("purchasing:suppliers")
     return render(
         request,
-        "purchasing/suppliers.html",
-        {"form": form, "suppliers": Supplier.objects.filter(owner=request.user)},
+        "contact_directory.html",
+        {
+            "form": form,
+            "heading": "Pesquisar fornecedores",
+            "kind": "supplier",
+            "query": request.GET.get("q", ""),
+            "create_url": "/compras/nova/",
+            "page_obj": Paginator(
+                __import__(
+                    "accounts.partners", fromlist=["search_contacts"]
+                ).search_contacts(Supplier, request.user, request.GET.get("q", "")),
+                20,
+            ).get_page(request.GET.get("page")),
+        },
     )
 
 
@@ -274,5 +306,20 @@ def allocation(request, pk):
             "form": form,
             "heading": "Revisar rateio e confirmar compra",
             "description": f"Total da compra: R$ {purchase.total:.2f}. No método manual, informe o custo final completo por item, incluindo sua parte do frete e desconto. No proporcional, os valores manuais são ignorados. A confirmação congela os custos antes do recebimento.",
+        },
+    )
+
+
+@never_cache
+@login_required
+def supplier_history(request, pk):
+    contact = get_object_or_404(Supplier, pk=pk, owner=request.user)
+    return render(
+        request,
+        "contact_history.html",
+        {
+            "contact": contact,
+            "kind": "supplier",
+            "purchases": Purchase.objects.filter(owner=request.user, supplier=contact),
         },
     )

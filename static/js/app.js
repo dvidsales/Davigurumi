@@ -30,3 +30,20 @@ for (const element of document.querySelectorAll(".timer[data-start]")) {
   };
   render(); setInterval(render, 1000);
 }
+
+// Exact resolved route URLs also cover namespaces in nested installations.
+const navigation = document.querySelector('nav[aria-label="Navegação principal"]');
+if (navigation) {
+  const links = [...navigation.querySelectorAll('a')];
+  const match = links.filter(link => {
+    const path = new URL(link.href).pathname;
+    return path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+  }).sort((a,b) => new URL(b.href).pathname.length - new URL(a.href).pathname.length)[0];
+  if (match) {
+    for (const link of links) { link.classList.remove('active'); link.removeAttribute('aria-current'); }
+    match.classList.add('active'); match.setAttribute('aria-current','page');
+  } else {
+    const active = navigation.querySelector('a.active');
+    if(active) active.setAttribute('aria-current','page');
+  }
+}

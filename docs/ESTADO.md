@@ -1,6 +1,6 @@
 # Estado para continuidade — 07/10/2026
 
-Repositório `/workspace/Davigurumi`, branch `feat/privacy-and-local-testing`, baseada em `origin/main` (`66a5c66`). PRs #1–#4 incorporados. A continuidade de privacidade, cotas e testes locais está no [PR #5](https://github.com/dvidsales/Davigurumi/pull/5), aberto para revisão após autorização de envio ao GitHub. Não apagar `.local/` ou recriar o projeto. O usuário pediu manter a aplicação fora de uso público; nenhum merge ou deploy desta continuidade foi autorizado.
+Repositório `/workspace/Davigurumi`, branch `feat/usability-feedback`. PRs #1–#5 incorporados à main. Os ajustes do feedback de interface estão no [PR #6](https://github.com/dvidsales/Davigurumi/pull/6), aberto para revisão. Não apagar `.local/` ou recriar o projeto. O usuário pediu manter a aplicação fora de uso público; nenhum merge ou deploy desta continuidade foi autorizado.
 
 O app evoluiu de contas/materiais/calculadora para os módulos documentados no README. PostgreSQL 17 foi iniciado e validado em Docker. SQLite anterior continua disponível e recebeu migrações compatíveis. Ambos são bancos diferentes.
 
@@ -44,3 +44,7 @@ Exclusão integral administrativa com prévia, tombstones externos assinados, bl
 160 testes PostgreSQL passaram; SQLite 155 passaram/5 exclusivos ignorados. Chromium: 31 telas de 360 px e telas principais em 768/1024, zero violações WCAG automáticas; carga sintética de 48 leituras/4 simultâneas, zero falhas. Auditorias sem vulnerabilidades conhecidas/achados médios ou altos. Nenhuma migração nova nesta continuidade.
 
 Base sintética adicional `davigurumi_browser_essentials_20261007`, arquivos `.local/browser_essentials_files`, servidor local de teste 127.0.0.1:8104 (reiniciar após restauração). Roteiro de homologação em TESTES_DISPOSITIVOS: computador e celular; tablet se fizer parte da rotina. `check_readiness` retorna false neste ambiente de desenvolvimento; não é produção nem autoriza abertura pública.
+
+## Feedback do usuário
+
+Branch `feat/usability-feedback`: navegação ativa incluindo relatórios/demo/segurança; filtros integrados; cadastro de contatos dentro da compra/orçamento com busca/ID/histórico; biblioteca de peças com pedidos relacionados; orçamento em etapas, publicação vazia guiada e confirmações exibidas somente quando pertinentes. 164 testes PG; SQLite 159/5 ignorados; navegador e WCAG automáticos passaram. Não alterar ou apagar bases do usuário para aplicar esta versão.

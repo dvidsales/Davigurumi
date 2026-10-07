@@ -13,6 +13,13 @@ class SupplierForm(forms.ModelForm):
 
 
 class PurchaseForm(forms.ModelForm):
+    new_supplier_name = forms.CharField(
+        label="Nome do novo fornecedor", max_length=160, required=False
+    )
+    new_supplier_contact = forms.CharField(
+        label="Contato do novo fornecedor", max_length=160, required=False
+    )
+
     class Meta:
         model = Purchase
         fields = ("supplier", "date", "freight", "discount", "notes")
@@ -21,12 +28,23 @@ class PurchaseForm(forms.ModelForm):
             "notes": forms.Textarea(attrs={"rows": 3}),
         }
 
-    def __init__(self, *args, owner, **kwargs):
+    def __init__(self, *args, owner, contact_query="", **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["supplier"].queryset = Supplier.objects.filter(owner=owner)
+        from accounts.partners import contact_choices
+
+        contact_choices(self, "supplier", Supplier, owner, contact_query)
+        self.fields["supplier"].label = "Fornecedor já cadastrado"
+        if not self.instance._state.adding:
+            self.fields.pop("new_supplier_name")
+            self.fields.pop("new_supplier_contact")
         self.fields["date"].initial = timezone.localdate()
         for name in ("freight", "discount"):
             self.fields[name].min_value = Decimal(0)
+
+    def clean(self):
+        from accounts.partners import validate_contact
+
+        return validate_contact(super().clean(), "supplier")
 
 
 class ItemForm(forms.Form):

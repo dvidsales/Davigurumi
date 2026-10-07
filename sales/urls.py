@@ -5,6 +5,7 @@ app_name = "sales"
 urlpatterns = [
     path("orcamentos/", views.index, name="index"),
     path("clientes/", views.clients, name="clients"),
+    path("clientes/<uuid:pk>/", views.client_history, name="client_history"),
     path("orcamentos/novo/", views.create, name="create"),
     path("orcamentos/<uuid:pk>/comparar/", views.compare, name="compare"),
     path("orcamentos/<uuid:pk>/", views.detail, name="detail"),
