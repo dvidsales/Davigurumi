@@ -43,9 +43,6 @@ with psycopg.connect(
             sql.SQL("GRANT davigurumi TO {}").format(sql.Identifier(administrator))
         )
         cursor.execute("CREATE SCHEMA davigurumi AUTHORIZATION davigurumi")
-        cursor.execute(
-            sql.SQL("REVOKE davigurumi FROM {}").format(sql.Identifier(administrator))
-        )
         cursor.execute("REVOKE ALL ON SCHEMA davigurumi FROM PUBLIC")
         cursor.execute(
             "SELECT rolname FROM pg_roles WHERE rolname IN ('anon','authenticated')"
@@ -56,6 +53,9 @@ with psycopg.connect(
                     sql.Identifier(name)
                 )
             )
+        cursor.execute(
+            sql.SQL("REVOKE davigurumi FROM {}").format(sql.Identifier(administrator))
+        )
 print(
     "Conta restrita e schema privado criados. Configure a nova senha somente no ambiente seguro do Render."
 )
