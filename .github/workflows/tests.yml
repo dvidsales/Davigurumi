@@ -32,6 +32,15 @@ jobs:
       - run: python manage.py check
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py test --verbosity 2
+      - name: Build production static files
+        run: DJANGO_STATIC_MANIFEST=1 python manage.py collectstatic --noinput
+      - name: Check production configuration
+        run: python manage.py check --deploy --fail-level ERROR
+        env:
+          DJANGO_DEBUG: "0"
+          DJANGO_SECRET_KEY: synthetic-ci-production-key-0123456789abcdefghijklmnopqrstuvwxyz
+          DJANGO_ALLOWED_HOSTS: localhost
+          DJANGO_TRUST_PROXY: "1"
 
   security:
     runs-on: ubuntu-latest

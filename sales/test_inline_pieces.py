@@ -109,3 +109,34 @@ class InlinePieceTests(TestCase):
             )
         self.assertEqual(Project.objects.filter(owner=self.owner).count(), count)
         self.assertEqual(QuoteItem.objects.filter(version=self.version).count(), 1)
+
+    def test_large_discount_returns_validation_and_calculated_price_stays_automatic(
+        self,
+    ):
+        project = create_project(
+            owner=self.owner,
+            name="Automático",
+            estimated_seconds=3600,
+            hourly_rate=Decimal("50"),
+            percentage=Decimal(0),
+        )
+        url = reverse("sales:piece_suggestion", args=[project.pk])
+        self.assertEqual(
+            self.client.get(url, {"quantity": 1, "fixed_discount": 500}).status_code,
+            400,
+        )
+        response = self.client.post(
+            self.path,
+            {
+                "project": project.pk,
+                "quantity": 2,
+                "manual_price": "999",
+                "use_calculated_price": "on",
+                "discount": 0,
+                "fixed_discount": 0,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        item = self.version.items.get()
+        self.assertIsNone(item.manual_price)
+        self.assertEqual(item.total, Decimal("100"))

@@ -1,10 +1,12 @@
 from django.contrib.auth import views as auth
 from django.urls import include, path
-from accounts.views import dashboard, signup
+from accounts.views import dashboard, signup, SafePasswordResetView
 from .pwa import manifest, service_worker
+from .health import health
 from accounts import demo, security
 
 urlpatterns = [
+    path("healthz/", health, name="health"),
     path("manifest.webmanifest", manifest, name="manifest"),
     path("service-worker.js", service_worker, name="service_worker"),
     path("", dashboard, name="dashboard"),
@@ -20,7 +22,7 @@ urlpatterns = [
     path("conta/criar/", signup, name="signup"),
     path("conta/entrar/", auth.LoginView.as_view(), name="login"),
     path("conta/sair/", auth.LogoutView.as_view(), name="logout"),
-    path("conta/recuperar/", auth.PasswordResetView.as_view(), name="password_reset"),
+    path("conta/recuperar/", SafePasswordResetView.as_view(), name="password_reset"),
     path(
         "conta/recuperar/enviado/",
         auth.PasswordResetDoneView.as_view(),

@@ -99,3 +99,14 @@ Chromium em base sintética confirmou cadastro direto, descrição e preço pree
 175 testes PostgreSQL passaram; SQLite passou 170 com 5 exclusivos ignorados. Novos testes cobrem acesso às quatro etapas no rascunho vazio, condições editadas salvas, leitura de versão publicada sem alterar seu hash, isolamento e rotas inválidas/método POST bloqueado. Corrigidos campos extras de cliente enviados indevidamente ao serviço de edição das condições.
 
 Chromium confirmou percurso 1 → 2 → 3 → 4 → 2 e cinco páginas (incluindo versão aprovada/publicada) a 1440, 768 e 360 px, sem overflow, erros JS/5xx ou violações automáticas WCAG. Capturas fictícias em `docs/images/orcamento-etapas.png` e `docs/images/financeiro-acoes.png`. Botões editar/remover alinhados; ações e registros financeiros separados com espaçamento. Check/migrações/diff e Bandit sem achados médios/altos passaram. Sem nova migração ou deploy público.
+
+
+## Revisão e beta privado — 08/10/2026
+
+186 testes aprovados no PostgreSQL. SQLite: 186 executados, 181 aprovados e 5 exclusivos do PostgreSQL ignorados. Novas regressões: convite por e-mail, bloqueio de convite inválido, proxy/IP, saúde sem detalhes, armazenamento privado remoto, indisponibilidade/bucket público, exclusão assinada e arquivos órfãos, exportação/restauração remota, erro de desconto, preço calculado preservado, produção sem pagamento confirmado, recuperação sem SMTP e imagem indisponível com isolamento entre contas.
+
+Chromium: jornada completa com orçamento de 63, sinal de 20 e saldo de 43, estoque/produção/entrega/recebimento, exportações e imports, isolamento e demonstração. 31 telas sem overflow a 360 px, verificações a 768/1024 px, zero erros JS/5xx e zero violações detectadas pelo axe. Carga local descartável: 48 requisições concorrência 4, p50 72 ms/p95 301 ms, zero falhas; isso não estima capacidade no plano gratuito.
+
+Gunicorn com DEBUG desligado: login, CSS com manifesto, cookie seguro, saúde, redirecionamento HTTPS, cadastro fechado e recuperação indisponível verificados. Migrations completas em schema privado e papel sem privilégios administrativos passaram no PostgreSQL local; TLS desse banco local é desativado apenas na interface de loopback. Deploy exige verify-full. Check/migrações, sintaxe JS/Bash, auditoria de dependências sem vulnerabilidades conhecidas e Bandit sem achados médios/altos passaram. Nenhum teste ou alerta foi removido para obter aprovação.
+
+O protocolo Supabase foi simulado, não validado contra uma conta real. Render/Supabase não foram provisionados; disponibilidade/preços dos planos não puderam ser confirmados devido ao bloqueio de rede. Falta ativar suas contas e executar o roteiro de verificação do [deploy gratuito](DEPLOY_TESTES_GRATUITO.md), além dos testes em dispositivos reais. Uso público não está liberado.

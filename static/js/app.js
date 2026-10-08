@@ -54,11 +54,12 @@ if (pieceForm) {
   const name = pieceForm.querySelector('[name=new_piece_name]');
   const description = pieceForm.querySelector('[name=description]');
   const manual = pieceForm.querySelector('[name=manual_price]');
+  const calculated = pieceForm.querySelector('[name=use_calculated_price]');
   const preview = pieceForm.querySelector('[data-piece-preview]');
   const alternatives = pieceForm.querySelector('[data-piece-alternatives]');
   let controller;
   let manualEdited = Boolean(manual.value);
-  manual.addEventListener('input', () => { manualEdited = true; });
+  manual.addEventListener('input', () => { manualEdited = true; calculated.value = ''; });
   async function suggest(changedProject = false) {
     if (controller) controller.abort();
     name.closest('.field').hidden = Boolean(project.value) && !name.value;
@@ -79,7 +80,7 @@ if (pieceForm) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Não foi possível carregar a sugestão.');
       if (changedProject || !description.value) description.value = data.description;
-      if (!manualEdited) manual.value = data.manual_price || data.calculated_price || '';
+      if (!manualEdited) { manual.value = data.manual_price || data.calculated_price || ''; calculated.value = data.complete ? 'on' : ''; }
       preview.textContent = data.complete ? `Preço calculado para esta quantidade: R$ ${data.calculated_price.replace('.', ',')}. Confira ou informe um preço manual.` : (data.manual_price ? 'Preço manual sugerido com base no último orçamento e na quantidade atual. Confira; os custos ainda estão incompletos.' : 'Custos ainda incompletos. Informe um preço manual total para este item.');
       alternatives.hidden = !data.has_alternatives;
       const link = new URL(location.href); link.searchParams.set('project', project.value); alternatives.href = link;

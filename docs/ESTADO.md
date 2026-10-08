@@ -1,3 +1,11 @@
+# Estado atual — 08/10/2026
+
+Branch `feat/private-beta-deploy`, baseada na main com PR #11 incorporado. Revisão de bugs e preparação de beta gratuito por convite concluídas no código. Nenhum serviço foi publicado. Leia [REVISAO_360.md](REVISAO_360.md) e [DEPLOY_TESTES_GRATUITO.md](DEPLOY_TESTES_GRATUITO.md). A integração real com Render/Supabase depende das contas do responsável e não foi validada com credenciais reais. Não apagar `.local/`, não fazer merge ou publicar produção sem autorização.
+
+Validação atual: 186 testes PostgreSQL aprovados; SQLite executa 186, com 5 exclusivos do PostgreSQL ignorados. Chromium percorreu 31 telas a 360 px, também conferiu 768/1024 px, sem erros JS/5xx/overflow ou violações detectadas pelo axe. Carga local: 48 requisições, concorrência 4, nenhuma falha. Gunicorn em configuração sem DEBUG serviu login e estáticos, aplicou HTTPS/cookie seguro e bloqueou cadastro público. Migrations foram aplicadas em schema privado com papel PostgreSQL sem privilégios administrativos.
+
+## Histórico anterior (07/10/2026)
+
 # Estado para continuidade — 07/10/2026
 
 Repositório `/workspace/Davigurumi`, branch `feat/interface-and-quote-navigation`, baseada na main após PR #10 incorporado. Ajustes das ações de itens/financeiro e quatro etapas navegáveis prontos para revisão. Não apagar `.local/` ou recriar o projeto; não fazer deploy público ou merge sem autorização.

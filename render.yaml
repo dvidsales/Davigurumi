@@ -1,0 +1,58 @@
+services:
+  - type: web
+    name: davigurumi-beta
+    runtime: python
+    plan: free
+    autoDeploy: false
+    buildCommand: pip install -r requirements.txt && DJANGO_DEBUG=1 DJANGO_STATIC_MANIFEST=1 DJANGO_BETA_MODE=0 DJANGO_REMOTE_STORAGE=0 python manage.py collectstatic --noinput
+    startCommand: bash deploy/start_beta.sh
+    healthCheckPath: /healthz/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.13
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: DJANGO_BETA_MODE
+        value: "1"
+      - key: DJANGO_PUBLIC_SIGNUP
+        value: "0"
+      - key: DJANGO_TRUST_PROXY
+        value: "1"
+      - key: DJANGO_REMOTE_STORAGE
+        value: "1"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_PRIVACY_LEDGER_KEY
+        generateValue: true
+      - key: DJANGO_BETA_INVITE_SECRET
+        generateValue: true
+      - key: POSTGRES_DB
+        value: postgres
+      - key: POSTGRES_SCHEMA
+        value: davigurumi
+      - key: POSTGRES_SSLMODE
+        value: verify-full
+      - key: POSTGRES_SSLROOTCERT
+        value: system
+      - key: POSTGRES_PORT
+        value: "5432"
+      - key: POSTGRES_HOST
+        sync: false
+      - key: POSTGRES_USER
+        sync: false
+      - key: POSTGRES_PASSWORD
+        sync: false
+      - key: DJANGO_ALLOWED_HOSTS
+        sync: false
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: DJANGO_BETA_EMAILS
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_FILES_BUCKET
+        value: davigurumi-files
+      - key: SUPABASE_LEDGER_BUCKET
+        value: davigurumi-erasure

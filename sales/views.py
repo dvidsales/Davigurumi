@@ -168,7 +168,11 @@ def item(request, pk):
                 new_piece_name=data["new_piece_name"],
                 quantity=data["quantity"],
                 description=data["description"],
-                manual_price=data["manual_price"],
+                manual_price=(
+                    None
+                    if data["use_calculated_price"] and data["project"]
+                    else data["manual_price"]
+                ),
                 discount=data["discount"] / Decimal(100),
                 fixed_discount=data["fixed_discount"],
                 choices=choices,
@@ -247,7 +251,11 @@ def edit_item(request, pk):
                 new_piece_name=data["new_piece_name"],
                 quantity=data["quantity"],
                 description=data["description"],
-                manual_price=data["manual_price"],
+                manual_price=(
+                    None
+                    if data["use_calculated_price"] and data["project"]
+                    else data["manual_price"]
+                ),
                 discount=data["discount"] / Decimal(100),
                 fixed_discount=data["fixed_discount"],
                 choices=choices,
@@ -495,8 +503,15 @@ def image_upload(request, pk):
 @login_required
 def owner_image(request, pk):
     asset = get_object_or_404(FileAsset, pk=pk, owner=request.user)
+    try:
+        uploaded = asset.file.open("rb")
+    except (OSError, ValidationError):
+        return HttpResponse(
+            "Imagem temporariamente indisponível. Tente novamente mais tarde.",
+            status=503,
+        )
     response = FileResponse(
-        asset.file.open("rb"),
+        uploaded,
         content_type="image/png" if asset.file.name.endswith(".png") else "image/jpeg",
     )
     response["X-Content-Type-Options"] = "nosniff"
@@ -512,8 +527,15 @@ def portal_image(request, raw, pk):
 
         raise Http404
     asset = get_object_or_404(FileAsset, pk=pk, owner=token.version.quote.owner)
+    try:
+        uploaded = asset.file.open("rb")
+    except (OSError, ValidationError):
+        return HttpResponse(
+            "Imagem temporariamente indisponível. Tente novamente mais tarde.",
+            status=503,
+        )
     response = FileResponse(
-        asset.file.open("rb"),
+        uploaded,
         content_type="image/png" if asset.file.name.endswith(".png") else "image/jpeg",
     )
     response["X-Content-Type-Options"] = "nosniff"
@@ -670,7 +692,7 @@ def piece_suggestion(request, pk):
             discount=data["discount"] / Decimal(100),
             fixed_discount=data["fixed_discount"],
         )
-    except ValidationError:
+    except (ValidationError, ValueError):
         return JsonResponse(
             {
                 "error": "Não foi possível calcular com esses dados. Confira a ficha e os descontos."

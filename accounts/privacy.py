@@ -33,14 +33,46 @@ def ledger_root():
     return root
 
 
+def remote_ledger():
+    from config.storage import SupabasePrivateStorage
+
+    if not settings.PRIVACY_LEDGER_KEY:
+        raise ValidationError(
+            "Configure uma chave separada para o registro de exclusões."
+        )
+    return SupabasePrivateStorage(bucket=settings.SUPABASE_LEDGER_BUCKET)
+
+
+def ledger_records():
+    if settings.REMOTE_PRIVATE_STORAGE:
+        _, names = remote_ledger().listdir("")
+        return [
+            read_tombstone(name[:-5])
+            for name in sorted(names)
+            if name.endswith(".json")
+        ]
+    return [read_tombstone(path.stem) for path in sorted(ledger_root().glob("*.json"))]
+
+
 def read_tombstone(owner_id):
-    path = ledger_root() / (str(uuid.UUID(str(owner_id))) + ".json")
-    if not path.exists():
-        return None
+    name = str(uuid.UUID(str(owner_id))) + ".json"
     try:
-        if path.is_symlink() or path.stat().st_size > 1024 * 1024:
-            raise ValueError()
-        package = json.loads(path.read_text())
+        if settings.REMOTE_PRIVATE_STORAGE:
+            try:
+                with remote_ledger().open(name) as file:
+                    value = file.read(1024 * 1024 + 1)
+                if len(value) > 1024 * 1024:
+                    raise ValueError()
+                package = json.loads(value)
+            except FileNotFoundError:
+                return None
+        else:
+            path = ledger_root() / name
+            if not path.exists():
+                return None
+            if path.is_symlink() or path.stat().st_size > 1024 * 1024:
+                raise ValueError()
+            package = json.loads(path.read_text())
         record = signing.Signer(
             key=settings.PRIVACY_LEDGER_KEY, salt="erasure-v1"
         ).unsign_object(package["signed"])
@@ -65,7 +97,8 @@ def assert_not_erased(owner_id):
     # A fresh local checkout has no ledger until its first erasure. Production must
     # mount the independent ledger and key, including for restoration and login.
     if (
-        not settings.PRIVACY_LEDGER_REQUIRED
+        not settings.REMOTE_PRIVATE_STORAGE
+        and not settings.PRIVACY_LEDGER_REQUIRED
         and not Path(settings.PRIVACY_LEDGER_DIR).exists()
     ):
         return
@@ -76,6 +109,20 @@ def assert_not_erased(owner_id):
 
 
 def write_tombstone(record):
+    if settings.REMOTE_PRIVATE_STORAGE:
+        value = signing.Signer(
+            key=settings.PRIVACY_LEDGER_KEY, salt="erasure-v1"
+        ).sign_object(record)
+        remote_ledger().put(
+            record["owner"] + ".json",
+            json.dumps({"signed": value}).encode(),
+            upsert=True,
+        )
+        if read_tombstone(record["owner"]) != record:
+            raise ValidationError(
+                "Não foi possível conferir o registro remoto de exclusão."
+            )
+        return
     root = ledger_root()
     target = root / (record["owner"] + ".json")
     value = signing.Signer(
@@ -136,7 +183,12 @@ def delete_files(records):
                 raise ValidationError(
                     "Arquivo de exclusão fora do armazenamento privado."
                 )
-            path.unlink(missing_ok=True)
+            if settings.REMOTE_PRIVATE_STORAGE:
+                from django.core.files.storage import default_storage
+
+                default_storage.delete(name)
+            else:
+                path.unlink(missing_ok=True)
 
 
 @transaction.atomic
@@ -176,7 +228,9 @@ def erase_account(*, owner_id, case_id, policy_reference, apply=False):
         raise ValidationError("Suspenda a conta antes de executar a exclusão.")
     from django.core.files.storage import default_storage, FileSystemStorage
 
-    if not isinstance(default_storage, FileSystemStorage):
+    from config.storage import SupabasePrivateStorage
+
+    if not isinstance(default_storage, (FileSystemStorage, SupabasePrivateStorage)):
         raise ValidationError(
             "Este procedimento requer armazenamento privado local; adapte o expurgo ao provedor antes de excluir."
         )
@@ -201,6 +255,15 @@ def erase_account(*, owner_id, case_id, policy_reference, apply=False):
                         .exists()
                     ):
                         filenames.add(name)
+        if settings.REMOTE_PRIVATE_STORAGE:
+            for name in default_storage.walk("private/" + str(identity)):
+                if (
+                    not apps.get_model("sales.fileasset")
+                    .objects.filter(file=name)
+                    .exclude(owner_id__in=identities)
+                    .exists()
+                ):
+                    filenames.add(name)
         record = existing or {
             "schema": 1,
             "owner": str(identity),

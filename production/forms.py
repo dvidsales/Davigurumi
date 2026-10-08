@@ -155,6 +155,10 @@ class CompletionForm(PaymentForm):
         super().__init__(*args, **kwargs)
         for name in ("amount", "date", "method"):
             self.fields[name].required = False
+        if self.is_bound and not self.data.get("receive_payment"):
+            self.data = self.data.copy()
+            for name in ("amount", "date", "method", "notes", "allow_credit"):
+                self.data.pop(name, None)
 
     def clean(self):
         data = super().clean()

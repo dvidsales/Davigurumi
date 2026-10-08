@@ -2,7 +2,7 @@ import json
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
-from accounts.privacy import ledger_root, read_tombstone, erase_account
+from accounts.privacy import ledger_records, erase_account
 
 
 class Command(BaseCommand):
@@ -13,10 +13,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            records = [
-                read_tombstone(path.stem)
-                for path in sorted(ledger_root().glob("*.json"))
-            ]
+            records = ledger_records()
             # Validate every signature before touching a restored account.
             count = 0
             for record in records:
