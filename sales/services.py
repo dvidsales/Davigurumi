@@ -62,7 +62,8 @@ def add_quote_item(
     *,
     owner,
     version_id,
-    project_id,
+    project_id=None,
+    new_piece_name="",
     quantity,
     description="",
     manual_price=None,
@@ -80,7 +81,29 @@ def add_quote_item(
         )
     if version.items.count() >= 50:
         raise ValidationError("Limite de 50 itens por versão.")
-    project = get_object_or_404(Project, pk=project_id, owner=owner)
+    if project_id and new_piece_name:
+        raise ValidationError("Escolha uma peça existente ou informe uma nova.")
+    if new_piece_name:
+        if manual_price is None:
+            raise ValidationError("Informe o preço total da nova peça.")
+        if Project.objects.filter(
+            owner=owner, name__iexact=new_piece_name.strip()
+        ).exists():
+            raise ValidationError(
+                "Já existe uma peça com esse nome. Selecione-a na biblioteca."
+            )
+        from projects.services import create_project
+
+        project = create_project(
+            owner=owner,
+            name=new_piece_name.strip(),
+            description=description,
+            quick_entry=True,
+        )
+    elif project_id:
+        project = get_object_or_404(Project, pk=project_id, owner=owner)
+    else:
+        raise ValidationError("Informe uma nova peça ou escolha uma da biblioteca.")
     snapshot = snapshot_project(
         owner=owner,
         revision_id=project.current_revision_id,

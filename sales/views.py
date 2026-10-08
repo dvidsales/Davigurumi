@@ -6,12 +6,12 @@ from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.http import HttpResponse, FileResponse
+from django.http import HttpResponse, FileResponse, JsonResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from .models import (
     Client,
     Quote,
@@ -160,7 +160,8 @@ def item(request, pk):
             services.add_quote_item(
                 owner=request.user,
                 version_id=pk,
-                project_id=data["project"].pk,
+                project_id=data["project"].pk if data["project"] else None,
+                new_piece_name=data["new_piece_name"],
                 quantity=data["quantity"],
                 description=data["description"],
                 manual_price=data["manual_price"],
@@ -202,13 +203,28 @@ def edit_item(request, pk):
         "discount": Decimal(item.snapshot.get("discount", "0")) * 100,
         "fixed_discount": item.snapshot.get("fixed_discount", "0"),
     }
+    if request.GET.get("project"):
+        from projects.models import Project
+
+        import uuid
+
+        try:
+            selected_id = uuid.UUID(request.GET["project"])
+        except (ValueError, TypeError):
+            raise Http404
+        selected = get_object_or_404(Project, pk=selected_id, owner=request.user)
+        initial.update(
+            project=selected.pk,
+            description=(selected.current_revision.description or selected.name)[:300],
+            manual_price=None,
+        )
     for line in item.snapshot.get("materials", []):
         if line.get("alternative"):
             initial["alternative_" + line["line"]] = line["alternative"]
     form = QuoteItemForm(
         request.POST or None,
         owner=request.user,
-        project_id=item.project_revision.project_id,
+        project_id=initial["project"],
         initial=initial,
     )
     if request.method == "POST" and form.is_valid():
@@ -222,7 +238,8 @@ def edit_item(request, pk):
             services.edit_draft_item(
                 owner=request.user,
                 item_id=pk,
-                project_id=data["project"].pk,
+                project_id=data["project"].pk if data["project"] else None,
+                new_piece_name=data["new_piece_name"],
                 quantity=data["quantity"],
                 description=data["description"],
                 manual_price=data["manual_price"],
@@ -238,10 +255,12 @@ def edit_item(request, pk):
             return redirect("sales:detail", pk=item.version.quote_id)
     return render(
         request,
-        "generic_form.html",
+        "sales/item_form.html",
         {
             "form": form,
-            "heading": "Editar item do rascunho/aditivo",
+            "version": item.version,
+            "submit_label": "Confirmar alterações",
+            "heading": "Editar peça do orçamento",
             "description": "A memória de cálculo será atualizada usando a ficha atual. Versões já publicadas permanecem intactas.",
         },
     )
@@ -592,4 +611,88 @@ def client_history(request, pk):
         request,
         "contact_history.html",
         {"contact": contact, "kind": "client", "quotes": quotes, "orders": orders},
+    )
+
+
+@never_cache
+@login_required
+@require_GET
+def piece_suggestion(request, pk):
+    from projects.models import Project
+    from projects.services import snapshot_project
+    from pricing.domain import calculate_price
+
+    project = get_object_or_404(
+        Project.objects.select_related("current_revision"), pk=pk, owner=request.user
+    )
+    values = {
+        "project": str(project.pk),
+        "quantity": request.GET.get("quantity", "1"),
+        "discount": request.GET.get("discount", "0"),
+        "fixed_discount": request.GET.get("fixed_discount", "0"),
+    }
+    for name, value in request.GET.items():
+        if name.startswith("alternative_"):
+            values[name] = value
+    form = QuoteItemForm(values, owner=request.user)
+    if not form.is_valid():
+        return JsonResponse(
+            {"error": "Confira a quantidade e os descontos."}, status=400
+        )
+    data = form.cleaned_data
+    choices = {
+        name.removeprefix("alternative_"): str(value.pk)
+        for name, value in data.items()
+        if name.startswith("alternative_") and value
+    }
+    try:
+        snapshot = snapshot_project(
+            owner=request.user,
+            revision_id=project.current_revision_id,
+            quantity=data["quantity"],
+            choices=choices,
+        )
+        result = calculate_price(
+            cost=Decimal(snapshot["cost"]),
+            mode=snapshot["mode"],
+            percentage=Decimal(snapshot["percentage"]),
+            fee=Decimal(snapshot["fee"]),
+            discount=data["discount"] / Decimal(100),
+            fixed_discount=data["fixed_discount"],
+        )
+    except ValidationError:
+        return JsonResponse(
+            {
+                "error": "Não foi possível calcular com esses dados. Confira a ficha e os descontos."
+            },
+            status=400,
+        )
+    previous = (
+        QuoteItem.objects.filter(
+            version__quote__owner=request.user,
+            project_revision__project=project,
+            manual_price__isnull=False,
+        )
+        .order_by("-version__quote__created_at", "-version__number", "-pk")
+        .first()
+    )
+    manual = (
+        (previous.manual_price / previous.quantity * data["quantity"]).quantize(
+            Decimal(".01")
+        )
+        if previous and not snapshot["complete"]
+        else None
+    )
+    return JsonResponse(
+        {
+            "description": (project.current_revision.description or project.name)[:300],
+            "calculated_price": (
+                str(result.sale_price) if snapshot["complete"] else None
+            ),
+            "manual_price": str(manual) if manual is not None else None,
+            "complete": snapshot["complete"],
+            "has_alternatives": project.current_revision.materials.filter(
+                alternatives__isnull=False
+            ).exists(),
+        }
     )

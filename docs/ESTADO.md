@@ -1,6 +1,6 @@
 # Estado para continuidade — 07/10/2026
 
-Repositório `/workspace/Davigurumi`, branch `feat/confirm-order-completion`, baseada na main após PRs #1–#7 incorporados. A revisão conjunta de produção, entrega e recebimento está pronta para revisão. Não apagar `.local/` ou recriar o projeto; não fazer deploy público ou merge sem autorização.
+Repositório `/workspace/Davigurumi`, branch `feat/inline-quote-pieces`, baseada na main após PR #8 incorporado. Cadastro de peças no orçamento e preenchimento automático prontos para revisão, com migração aditiva `projects.0003`. Não apagar `.local/` ou recriar o projeto; não fazer deploy público ou merge sem autorização.
 
 O app evoluiu de contas/materiais/calculadora para os módulos documentados no README. PostgreSQL 17 foi iniciado e validado em Docker. SQLite anterior continua disponível e recebeu migrações compatíveis. Ambos são bancos diferentes.
 

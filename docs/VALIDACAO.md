@@ -87,3 +87,9 @@ Pedidos agora lista aprovações atuais ainda não convertidas; caixa oferece ac
 169 testes passaram no PostgreSQL; SQLite executou 169 com 5 exclusivos ignorados (164 passaram). Quatro novos testes verificam saldo e meio sugeridos, confirmação única com reenvio idempotente, edição parcial sem pagamento implícito, rollback integral quando o recebimento é inválido, revisão desatualizada/assinatura adulterada/peça estrangeira e isolamento entre contas. Nenhum teste anterior foi removido.
 
 Chromium em base sintética confirmou produção/entrega/quitação numa revisão, saldo de 80 após sinal de 20 num pedido de 100, e ausência de pagamento pré-confirmado. Tela a 1440, 768 e 360 px sem overflow, erros JS/5xx ou violações automáticas WCAG 2 A/AA e 2.1 AA; injeção do axe usa bypass CSP apenas no navegador de teste, sem alterar a política da aplicação. Captura com dados fictícios em `docs/images/conclusao-encomenda.png`. Check Django, migrações e Bandit sem achados médios/altos passaram. Sem deploy público.
+
+## Peças direto no orçamento e preenchimento automático
+
+172 testes passaram no PostgreSQL; SQLite passou 167 com 5 exclusivos ignorados. Novos contratos cobrem criação integrada sem ficha anterior, reaproveitamento do preço proporcional, manutenção de custos desconhecidos/aceite da limitação na publicação, sugestão calculada por quantidade, isolamento, dados inválidos, duplicata e bloqueio de criação em versão publicada sem peça órfã. Migração aditiva `projects.0003_projectrevision_quick_entry`.
+
+Chromium em base sintética confirmou cadastro direto, descrição e preço preenchidos pela biblioteca, recálculo ao mudar quantidade e preservação de preço editado manualmente. Tela em 1440, 768 e 360 px sem overflow, erros JS/5xx ou violações automáticas WCAG. Captura fictícia em `docs/images/peca-direto-orcamento.png`. Check Django, migrações, sintaxe JS, diff e Bandit sem achados médios/altos passaram. Sem deploy público.
