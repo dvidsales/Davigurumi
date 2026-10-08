@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<header class="page-heading"><div><a href="{% url 'sales:detail' version.quote_id %}">← Voltar ao orçamento</a><h1>{{ heading }}</h1><p>Adicione uma nova peça aqui ou reutilize uma da biblioteca. Confira os dados sugeridos e edite se precisar.</p></div></header>
+<header class="page-heading"><div><a href="{% url 'sales:detail' version.quote_id %}">← Voltar ao orçamento</a><h1>{{ heading }}</h1><p>Adicione uma nova peça aqui ou reutilize uma da biblioteca. Confira os dados sugeridos e edite se precisar.</p></div></header>{% include 'sales/workflow_steps.html' %}<p class="muted">Salve as alterações antes de trocar de etapa.</p>
 <section class="card form-card"><form method="post" data-piece-form data-suggestion-base="{% url 'sales:piece_suggestion' '00000000-0000-0000-0000-000000000000' %}">{% csrf_token %}
 <p>Para uma peça nova, basta informar o nome, a quantidade e o preço total. Ela será salva na biblioteca junto com o item, sem sair do orçamento. Materiais e tempo podem ser completados depois.</p>
 {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}

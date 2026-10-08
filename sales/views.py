@@ -138,7 +138,11 @@ def detail(request, pk):
     return render(
         request,
         "sales/detail.html",
-        {"quote": quote, "version": quote.versions.order_by("-number").first()},
+        {
+            "quote": quote,
+            "version": quote.versions.order_by("-number").first(),
+            "workflow_step": 2,
+        },
     )
 
 
@@ -181,6 +185,7 @@ def item(request, pk):
         {
             "form": form,
             "heading": "Adicionar item ao orçamento",
+            "workflow_step": 2,
             "projects": form.fields["project"].queryset,
             "version": version,
         },
@@ -259,6 +264,7 @@ def edit_item(request, pk):
         {
             "form": form,
             "version": item.version,
+            "workflow_step": 2,
             "submit_label": "Confirmar alterações",
             "heading": "Editar peça do orçamento",
             "description": "A memória de cálculo será atualizada usando a ficha atual. Versões já publicadas permanecem intactas.",
@@ -279,7 +285,8 @@ def edit_version(request, pk):
             "valid_days": version.valid_days,
         },
     )
-    del form.fields["client"]
+    for name in ("client", "new_client_name", "new_client_contact"):
+        form.fields.pop(name, None)
     if request.method == "POST" and form.is_valid():
         try:
             services.edit_draft_version(
@@ -294,8 +301,10 @@ def edit_version(request, pk):
         "generic_form.html",
         {
             "form": form,
-            "heading": "Condições do rascunho/aditivo",
-            "description": "Alterações comerciais publicadas precisam de nova versão e aceite.",
+            "heading": "Cliente e condições",
+            "version": version,
+            "workflow_step": 1,
+            "description": f"Cliente: {version.quote.client or 'Não informado'}. Confira as condições desta versão.",
         },
     )
 
@@ -354,6 +363,7 @@ def publish(request, pk):
         request,
         "sales/publish.html",
         {
+            "workflow_step": 3,
             "form": form,
             "version": version,
             "public": preview,
@@ -695,4 +705,42 @@ def piece_suggestion(request, pk):
                 alternatives__isnull=False
             ).exists(),
         }
+    )
+
+
+@never_cache
+@login_required
+@require_GET
+def workflow(request, pk, step):
+    from production.models import Order
+
+    version = get_object_or_404(
+        QuoteVersion.objects.select_related("quote__client"),
+        pk=pk,
+        quote__owner=request.user,
+    )
+    if step not in (1, 2, 3, 4):
+        raise Http404
+    if step == 1 and not version.published_at:
+        return redirect("sales:edit_version", pk=pk)
+    if step == 2:
+        return render(
+            request,
+            "sales/detail.html",
+            {"quote": version.quote, "version": version, "workflow_step": 2},
+        )
+    if step == 3 and not version.published_at and version.items.exists():
+        return redirect("sales:publish", pk=pk)
+    order = Order.objects.filter(
+        owner=request.user, approved_version__quote=version.quote
+    ).first()
+    return render(
+        request,
+        "sales/workflow.html",
+        {
+            "quote": version.quote,
+            "version": version,
+            "workflow_step": step,
+            "order": order,
+        },
     )

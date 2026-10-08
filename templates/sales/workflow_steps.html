@@ -1,0 +1,6 @@
+<nav aria-label="Etapas do orçamento"><ol class="workflow-steps">
+<li><a href="{% url 'sales:workflow' version.pk 1 %}" {% if workflow_step == 1 %}aria-current="step"{% endif %}>1. Cliente e condições</a></li>
+<li><a href="{% url 'sales:workflow' version.pk 2 %}" {% if workflow_step == 2 %}aria-current="step"{% endif %}>2. Peças e preço</a></li>
+<li><a href="{% url 'sales:workflow' version.pk 3 %}" {% if workflow_step == 3 %}aria-current="step"{% endif %}>3. Revisar e publicar</a></li>
+<li><a href="{% url 'sales:workflow' version.pk 4 %}" {% if workflow_step == 4 %}aria-current="step"{% endif %}>4. Aceite e pedido</a></li>
+</ol></nav>

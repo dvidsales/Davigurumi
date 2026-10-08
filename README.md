@@ -6,7 +6,7 @@ Aplicação web em **Python 3.12 / Django 5.2**, em português, para organizar t
 
 Pré-requisitos: **Python 3.12**, VS Code e a extensão **Python** da Microsoft. Para começar, SQLite é suficiente: não precisa instalar Docker ou PostgreSQL. Os testes de locks/triggers de produção usam PostgreSQL separadamente.
 
-Abra no VS Code a pasta do código que contém `manage.py` (`Arquivo → Abrir Pasta`). Se estiver usando o pacote local disponibilizado no chat, extraia-o em **uma pasta nova**, sem sobrescrever seu checkout ou dados existentes. Os ajustes de interface anteriores já estão na `main`. A conclusão simplificada já está na `main`. O cadastro de peças direto no orçamento e o preenchimento automático estão na branch `feat/inline-quote-pieces`, aguardando revisão. Depois de atualizar o código, execute `python manage.py migrate` para aplicar a nova migração.
+Abra no VS Code a pasta do código que contém `manage.py` (`Arquivo → Abrir Pasta`). Se estiver usando o pacote local disponibilizado no chat, extraia-o em **uma pasta nova**, sem sobrescrever seu checkout ou dados existentes. Os ajustes de interface anteriores já estão na `main`. A conclusão simplificada já está na `main`. O cadastro de peças no orçamento já está na `main`. Os ajustes de interface e navegação entre etapas estão na branch `feat/interface-and-quote-navigation`, aguardando revisão. Depois de atualizar o código, execute `python manage.py migrate` para aplicar a nova migração.
 
 Abra `Terminal → Novo Terminal` e confira a versão:
 
@@ -85,7 +85,7 @@ python manage.py makemigrations --check --dry-run
 python manage.py test
 ```
 
-No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. A etapa publicada teve CI PostgreSQL aprovada no GitHub. A revisão mais recente passou 172 testes PostgreSQL e 167 SQLite, com 5 específicos ignorados; ela está na branch `feat/inline-quote-pieces`, aguardando revisão. Consulte [VALIDACAO](docs/VALIDACAO.md) para distinguir as evidências locais e remotas.
+No cloud, use `bash scripts/with_postgres.sh manage.py test --noinput` para validar também locks, concorrência e proteções específicas de PostgreSQL. A etapa publicada teve CI PostgreSQL aprovada no GitHub. A revisão mais recente passou 175 testes PostgreSQL e 170 SQLite, com 5 específicos ignorados; ela está na branch `feat/interface-and-quote-navigation`, aguardando revisão. Consulte [VALIDACAO](docs/VALIDACAO.md) para distinguir as evidências locais e remotas.
 
 O teste de navegador exige Playwright, Chromium e **servidor ligado a uma base descartável separada**. Não execute no banco onde guarda dados próprios. Veja [VALIDACAO](docs/VALIDACAO.md).
 
@@ -129,3 +129,7 @@ O botão de recebimento separado também sugere saldo, data e meio de pagamento.
 Não é necessário cadastrar um projeto antes. Em **Adicionar peça**, deixe a biblioteca sem seleção e informe nome, quantidade e preço total. A peça e o item são salvos juntos, e a peça fica na biblioteca para reutilização. A ficha de materiais e tempo pode ser completada depois; enquanto os custos não forem conhecidos, a publicação exige reconhecer essa limitação.
 
 Ao escolher uma peça da biblioteca, descrição e preço são preenchidos automaticamente. O preço sugerido acompanha a quantidade e os descontos da ficha; para fichas incompletas, usa o último preço manual proporcional à quantidade, quando disponível. Você pode editar os dados. Alterar a quantidade preserva um preço que você tenha editado manualmente. Descontos são opcionais; preço manual representa o total final e substitui o cálculo automático.
+
+### Navegar pelas etapas do orçamento
+
+As quatro etapas são links presentes no orçamento, nas condições, na inclusão/edição de peças, na revisão e no compartilhamento. Você pode voltar ou avançar para conferir informações. Salve suas alterações antes de trocar de etapa. Se faltar uma peça ou a publicação, a etapa seguinte explica como continuar. Em uma versão publicada, as condições e a revisão ficam disponíveis para leitura; alterações comerciais exigem nova versão. Navegar não publica, aprova, cria pedido ou registra recebimento.

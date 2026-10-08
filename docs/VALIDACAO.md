@@ -93,3 +93,9 @@ Chromium em base sintética confirmou produção/entrega/quitação numa revisã
 172 testes passaram no PostgreSQL; SQLite passou 167 com 5 exclusivos ignorados. Novos contratos cobrem criação integrada sem ficha anterior, reaproveitamento do preço proporcional, manutenção de custos desconhecidos/aceite da limitação na publicação, sugestão calculada por quantidade, isolamento, dados inválidos, duplicata e bloqueio de criação em versão publicada sem peça órfã. Migração aditiva `projects.0003_projectrevision_quick_entry`.
 
 Chromium em base sintética confirmou cadastro direto, descrição e preço preenchidos pela biblioteca, recálculo ao mudar quantidade e preservação de preço editado manualmente. Tela em 1440, 768 e 360 px sem overflow, erros JS/5xx ou violações automáticas WCAG. Captura fictícia em `docs/images/peca-direto-orcamento.png`. Check Django, migrações, sintaxe JS, diff e Bandit sem achados médios/altos passaram. Sem deploy público.
+
+## Interface e navegação entre etapas
+
+175 testes PostgreSQL passaram; SQLite passou 170 com 5 exclusivos ignorados. Novos testes cobrem acesso às quatro etapas no rascunho vazio, condições editadas salvas, leitura de versão publicada sem alterar seu hash, isolamento e rotas inválidas/método POST bloqueado. Corrigidos campos extras de cliente enviados indevidamente ao serviço de edição das condições.
+
+Chromium confirmou percurso 1 → 2 → 3 → 4 → 2 e cinco páginas (incluindo versão aprovada/publicada) a 1440, 768 e 360 px, sem overflow, erros JS/5xx ou violações automáticas WCAG. Capturas fictícias em `docs/images/orcamento-etapas.png` e `docs/images/financeiro-acoes.png`. Botões editar/remover alinhados; ações e registros financeiros separados com espaçamento. Check/migrações/diff e Bandit sem achados médios/altos passaram. Sem nova migração ou deploy público.
