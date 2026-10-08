@@ -1,4 +1,5 @@
 import hashlib
+import ipaddress
 import hmac
 from datetime import timedelta
 from django.conf import settings
@@ -72,6 +73,17 @@ class DevelopmentSecurityMiddleware:
         general_write = request.method in {"POST", "PUT", "PATCH", "DELETE"}
         if general_write or public_read or report_read:
             address = request.META.get("REMOTE_ADDR", "unknown")
+            if settings.TRUSTED_PROXY:
+                try:
+                    address = str(
+                        ipaddress.ip_address(
+                            request.META.get("HTTP_X_FORWARDED_FOR", "")
+                            .split(",")[-1]
+                            .strip()
+                        )
+                    )
+                except ValueError:
+                    pass
             bucket = (
                 "/portal/"
                 if request.path.startswith("/portal/")

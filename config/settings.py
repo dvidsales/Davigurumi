@@ -1,6 +1,7 @@
 """Production fails closed; manage.py explicitly defaults to local development."""
 
 import os
+import re
 from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "accounts.middleware.DevelopmentSecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -103,6 +105,23 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if DEBUG and os.getenv("DJANGO_STATIC_MANIFEST", "0") != "1"
+            else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        )
+    },
+}
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+SUPABASE_FILES_BUCKET = os.getenv("SUPABASE_FILES_BUCKET", "davigurumi-files")
+SUPABASE_LEDGER_BUCKET = os.getenv("SUPABASE_LEDGER_BUCKET", "davigurumi-erasure")
+REMOTE_PRIVATE_STORAGE = os.getenv("DJANGO_REMOTE_STORAGE", "0") == "1"
+if REMOTE_PRIVATE_STORAGE:
+    STORAGES["default"] = {"BACKEND": "config.storage.SupabasePrivateStorage"}
 MEDIA_ROOT = Path(os.getenv("DJANGO_MEDIA_ROOT", str(BASE_DIR / ".local" / "files")))
 MAX_PRIVATE_IMAGES_PER_USER = 100
 MAX_IMAGES_PER_QUOTE = 10
@@ -136,6 +155,7 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_SSL_REDIRECT = not DEBUG
+SECURE_REDIRECT_EXEMPT = [r"^healthz/$"]
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
 PRIVATE_UPLOAD_LIMIT = 5 * 1024 * 1024
@@ -213,3 +233,61 @@ ACCOUNT_RECORD_LIMITS = {
     "sales.quoteversion": 5000,
 }
 ACCOUNT_STORAGE_LIMIT = 50 * 1024 * 1024
+
+TRUSTED_PROXY = os.getenv("DJANGO_TRUST_PROXY", "0") == "1"
+# Enable only when the host prevents bypassing its trusted reverse proxy.
+if TRUSTED_PROXY:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_TRUSTED_ORIGINS = [
+    value.strip()
+    for value in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if value.strip()
+]
+POSTGRES_SCHEMA = os.getenv("POSTGRES_SCHEMA", "")
+if POSTGRES_SCHEMA:
+    if not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", POSTGRES_SCHEMA):
+        raise ImproperlyConfigured("Nome de schema PostgreSQL inválido.")
+    if DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql":
+        raise ImproperlyConfigured("Schema privado exige PostgreSQL.")
+    if os.getenv("POSTGRES_SSLROOTCERT"):
+        DATABASES["default"]["OPTIONS"]["sslrootcert"] = os.environ[
+            "POSTGRES_SSLROOTCERT"
+        ]
+    DATABASES["default"]["OPTIONS"]["options"] = "-c search_path=" + POSTGRES_SCHEMA
+BETA_MODE = os.getenv("DJANGO_BETA_MODE", "0") == "1"
+BETA_INVITE_SECRET = os.getenv("DJANGO_BETA_INVITE_SECRET", "")
+BETA_EMAILS = {
+    value.strip().lower()
+    for value in os.getenv("DJANGO_BETA_EMAILS", "").split(",")
+    if value.strip()
+}
+if BETA_MODE:
+    if (
+        DEBUG
+        or PUBLIC_SIGNUP_ENABLED
+        or not REMOTE_PRIVATE_STORAGE
+        or not TRUSTED_PROXY
+    ):
+        raise ImproperlyConfigured(
+            "Beta exige DEBUG desligado, cadastro público fechado, armazenamento remoto e proxy confiável."
+        )
+    if len(BETA_INVITE_SECRET) < 32 or not BETA_EMAILS or len(BETA_EMAILS) > 20:
+        raise ImproperlyConfigured(
+            "Configure uma chave de convites e de 1 a 20 e-mails convidados."
+        )
+    if not POSTGRES_SCHEMA or POSTGRES_SCHEMA == "public":
+        raise ImproperlyConfigured(
+            "Beta exige schema PostgreSQL privado, fora da API pública."
+        )
+    if (
+        len(PRIVACY_LEDGER_KEY) < 32
+        or PRIVACY_LEDGER_KEY == SECRET_KEY
+        or SUPABASE_FILES_BUCKET == SUPABASE_LEDGER_BUCKET
+    ):
+        raise ImproperlyConfigured(
+            "Configure chave e bucket separados para o registro de exclusões."
+        )
+    ACCOUNT_STORAGE_LIMIT = 10 * 1024 * 1024
+    ACCOUNT_RECORD_LIMITS.update(
+        {"sales.quote": 100, "projects.project": 100, "production.order": 100}
+    )

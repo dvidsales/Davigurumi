@@ -49,6 +49,7 @@ class QuoteForm(forms.Form):
 
 
 class QuoteItemForm(forms.Form):
+    use_calculated_price = forms.BooleanField(required=False, widget=forms.HiddenInput)
     project = forms.ModelChoiceField(
         label="Peça da biblioteca (opcional)",
         queryset=Project.objects.none(),

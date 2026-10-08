@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.http import HttpResponse
 from django.contrib.auth import login
+from django.contrib.auth.views import PasswordResetView
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
 from django.shortcuts import redirect, render
@@ -14,7 +15,7 @@ from .forms import SignupForm
 def signup(request):
     if request.user.is_authenticated:
         return redirect("dashboard")
-    if not settings.PUBLIC_SIGNUP_ENABLED:
+    if not settings.PUBLIC_SIGNUP_ENABLED and not settings.BETA_MODE:
         return HttpResponse("Cadastro público desabilitado neste ambiente.", status=403)
     form = SignupForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -56,3 +57,22 @@ def dashboard(request):
             "recent_materials": materials.order_by("-created_at")[:5],
         },
     )
+
+
+class SafePasswordResetView(PasswordResetView):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["console_email"] = (
+            settings.EMAIL_BACKEND == "django.core.mail.backends.console.EmailBackend"
+        )
+        return context
+
+    def dispatch(self, request, *args, **kwargs):
+        unavailable = (
+            settings.EMAIL_BACKEND == "django.core.mail.backends.dummy.EmailBackend"
+        )
+        if unavailable:
+            return render(
+                request, "registration/password_reset_unavailable.html", status=503
+            )
+        return super().dispatch(request, *args, **kwargs)

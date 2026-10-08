@@ -265,6 +265,8 @@ def import_archive(*, owner, package):
     ensure_storage(owner, storage_bytes)
     staged = {}
     created_paths = []
+    from django.core.files.storage import default_storage
+
     root = Path(settings.MEDIA_ROOT).resolve()
     try:
         if any(
@@ -338,18 +340,22 @@ def import_archive(*, owner, package):
             destination = root / name
             if not destination.resolve().is_relative_to(root):
                 raise ValidationError("Caminho de armazenamento inválido.")
-            if destination.exists():
+            if default_storage.exists(name):
                 raise ValidationError(
                     "Arquivo de destino já existe. Restaure em armazenamento vazio."
                 )
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            destination.write_bytes(base64.b64decode(file["bytes"]))
-            destination.chmod(0o600)
-            created_paths.append(destination)
+            from django.core.files.base import ContentFile
+
+            saved = default_storage.save(
+                name, ContentFile(base64.b64decode(file["bytes"]))
+            )
+            created_paths.append(saved)
+            if saved != name:
+                raise ValidationError("Arquivo de destino mudou durante a restauração.")
         connection.check_constraints()
     except Exception as exc:
-        for destination in created_paths:
-            destination.unlink(missing_ok=True)
+        for name in created_paths:
+            default_storage.delete(name)
         if isinstance(
             exc, (IntegrityError, DataError, serializers.base.DeserializationError)
         ):

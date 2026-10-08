@@ -133,3 +133,7 @@ Ao escolher uma peça da biblioteca, descrição e preço são preenchidos autom
 ### Navegar pelas etapas do orçamento
 
 As quatro etapas são links presentes no orçamento, nas condições, na inclusão/edição de peças, na revisão e no compartilhamento. Você pode voltar ou avançar para conferir informações. Salve suas alterações antes de trocar de etapa. Se faltar uma peça ou a publicação, a etapa seguinte explica como continuar. Em uma versão publicada, as condições e a revisão ficam disponíveis para leitura; alterações comerciais exigem nova versão. Navegar não publica, aprova, cria pedido ou registra recebimento.
+
+### Testar com outras pessoas sem orçamento
+
+Foi preparada uma instalação de beta com convites: **Render Free + Supabase Free**, banco e arquivos privados persistentes. Veja o [passo a passo de deploy gratuito](docs/DEPLOY_TESTES_GRATUITO.md) e a [revisão de bugs e segurança](docs/REVISAO_360.md). O `render.yaml` não cria banco/disco pago e não habilita deploy automático. É necessário criar suas contas e configurar as credenciais nos painéis; nenhum serviço externo já está publicado. Confirme a disponibilidade dos planos Free antes de criar recursos.

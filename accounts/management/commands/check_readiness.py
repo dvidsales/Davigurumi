@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
-from accounts.privacy import ledger_root, read_tombstone
+from accounts.privacy import ledger_records
 
 
 class Command(BaseCommand):
@@ -31,9 +31,7 @@ class Command(BaseCommand):
             in {"require", "verify-ca", "verify-full"},
         }
         try:
-            root = ledger_root()
-            for path in root.glob("*.json"):
-                read_tombstone(path.stem)
+            ledger_records()
             checks["independent_erasure_ledger"] = bool(
                 settings.PRIVACY_LEDGER_REQUIRED
                 and settings.PRIVACY_LEDGER_KEY != settings.SECRET_KEY
