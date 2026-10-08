@@ -35,7 +35,17 @@ with psycopg.connect(
                 "CREATE ROLE davigurumi LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD {}"
             ).format(sql.Literal(app_password))
         )
+        # Managed PostgreSQL administrators can create roles without being able
+        # to SET ROLE to them. Temporarily grant membership inside this transaction.
+        cursor.execute("SELECT current_user")
+        administrator = cursor.fetchone()[0]
+        cursor.execute(
+            sql.SQL("GRANT davigurumi TO {}").format(sql.Identifier(administrator))
+        )
         cursor.execute("CREATE SCHEMA davigurumi AUTHORIZATION davigurumi")
+        cursor.execute(
+            sql.SQL("REVOKE davigurumi FROM {}").format(sql.Identifier(administrator))
+        )
         cursor.execute("REVOKE ALL ON SCHEMA davigurumi FROM PUBLIC")
         cursor.execute(
             "SELECT rolname FROM pg_roles WHERE rolname IN ('anon','authenticated')"
