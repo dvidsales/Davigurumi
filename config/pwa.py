@@ -3,6 +3,7 @@ from pathlib import Path
 from django.http import HttpResponse, JsonResponse
 from django.conf import settings
 from django.views.decorators.http import require_GET
+from django.templatetags.static import static
 
 
 @require_GET
@@ -38,8 +39,26 @@ def manifest(request):
 
 @require_GET
 def service_worker(request):
+    source = (settings.BASE_DIR / "static/js/service-worker.js").read_text()
+    assets = [
+        static(name)
+        for name in (
+            "css/app.css",
+            "js/app.js",
+            "icons/icon-192.png",
+            "icons/icon-512.png",
+        )
+    ]
+    source = "\n".join(
+        (
+            "const ASSETS = " + json.dumps(assets) + ";"
+            if line.startswith("const ASSETS = ")
+            else line
+        )
+        for line in source.splitlines()
+    )
     response = HttpResponse(
-        (settings.BASE_DIR / "static/js/service-worker.js").read_text(),
+        source,
         content_type="application/javascript",
     )
     response["Cache-Control"] = "no-cache"

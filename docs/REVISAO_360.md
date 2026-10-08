@@ -10,6 +10,8 @@ Escopo: fluxos de estoque, compras, precificação, peças, orçamento/publicaç
 - Falha ao abrir uma imagem privada causava erro 500. Agora informa indisponibilidade 503 sem expor detalhes do armazenamento.
 - Recuperação de senha com backend sem envio simulava sucesso. Agora orienta contatar o responsável, sem prometer e-mail.
 
+- O cache estático do service worker usava nomes sem versão; agora usa o manifesto de produção para cachear os arquivos CSS/JS corretos, mantendo a lista restrita a arquivos públicos.
+
 ## Preparação do beta
 
 Gunicorn e WhiteNoise substituem o servidor de desenvolvimento no deploy. HTTPS, cookies seguros, CSRF, validação de host, limites de uso, autenticação e autorização permanecem ativos. O endereço do cliente usado no limite de tentativas vem do proxy somente quando explicitamente confiável. Cadastro exige convite criptográfico por e-mail e lista de até 20 participantes.
