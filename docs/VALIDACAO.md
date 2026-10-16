@@ -119,3 +119,10 @@ Verificação final do service worker em configuração de produção: URLs de C
 186 testes passaram no PostgreSQL; SQLite executou 186, com 181 aprovados e 5 exclusivos ignorados. Jornada completa do navegador preservada: 31 telas a 360 px e verificações em 768/1024 px, sem erros JS/5xx, overflow ou violações detectadas pelo axe.
 
 O roteiro `scripts/smoke_mobile.cjs` valida 12 páginas em 8 larguras (320–1440 px), menu modal/foco/Escape/toque fora/rolagem, preservação de formulário, mudança para desktop, paisagem, texto a 200% em 320 px, redução de movimento e navegação sem JavaScript. Quatro verificações axe (menu mobile, cartões, desktop e login) passaram. Build estático com manifesto e sintaxe JS aprovados; sem migrations novas. O CI passa a executar o roteiro mobile e salvar capturas. WebKit não foi instalado por bloqueio de rede HTTP 403; não se afirma teste em Safari ou dispositivo real. Capturas e regras em [MOBILE.md](MOBILE.md).
+
+
+## Filtros de relatórios e notificações visíveis
+
+190 testes PostgreSQL aprovados; SQLite 185 aprovados e 5 exclusivos ignorados. Quatro regressões novas cobrem o contador restrito ao proprietário, redução após leitura, ausência de consulta para visitante e distinção entre filtros inválidos e resultados vazios.
+
+Roteiro mobile ampliado para 14 páginas × 8 larguras (112 verificações), incluindo movimentos por material e calendário; seis auditorias axe específicas passaram. Jornada completa em 31 telas preservada. Revisão adicional de movimentos/calendário em desktop/mobile e com dados/erros: sete auditorias axe sem violações detectadas, download CSV funcional e contador atualizado após leitura. Dados sintéticos em banco isolado, sem alterar contas do Render/Supabase. Detalhes em [AJUSTES_RELATORIOS.md](AJUSTES_RELATORIOS.md).
