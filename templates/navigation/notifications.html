@@ -1,0 +1,4 @@
+<a class="notification-shortcut{% if request.resolver_match.app_name == 'operations' and request.resolver_match.url_name == 'index' %} active{% endif %}" title="Notificações" href="{% url 'operations:index' %}" aria-label="Notificações{% if unread_notification_count %}: {{ unread_notification_count }} não lida{{ unread_notification_count|pluralize }}{% endif %}" {% if request.resolver_match.app_name == 'operations' and request.resolver_match.url_name == 'index' %}aria-current="page"{% endif %}>
+  {% include 'navigation/icon.html' with icon='bell' %}
+  {% if unread_notification_count %}<span class="notification-count" aria-hidden="true">{% if unread_notification_count > 99 %}99+{% else %}{{ unread_notification_count }}{% endif %}</span>{% endif %}
+</a>

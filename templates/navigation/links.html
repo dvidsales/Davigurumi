@@ -26,11 +26,10 @@
       <a class="{% if request.resolver_match.url_name == 'reports' %}active{% endif %}" href="{% url 'operations:reports' %}">Relatórios</a>
     </div>
   </details>
-  <details class="nav-group" {% if request.resolver_match.app_name == 'pricing' or request.resolver_match.app_name == 'portability' or request.resolver_match.url_name == 'demo' or request.path|slice:':7' == '/conta/' or request.resolver_match.app_name == 'operations' and request.resolver_match.url_name == 'index' %}open{% endif %}>
+  <details class="nav-group" {% if request.resolver_match.app_name == 'pricing' or request.resolver_match.app_name == 'portability' or request.resolver_match.url_name == 'demo' or request.path|slice:':7' == '/conta/' %}open{% endif %}>
     <summary>{% include 'navigation/icon.html' with icon='menu' %}<span>Mais</span></summary>
     <div class="nav-children">
       <a class="{% if request.resolver_match.app_name == 'pricing' %}active{% endif %}" href="{% url 'pricing:calculator' %}">Calculadora de preços</a>
-      <a class="{% if request.resolver_match.app_name == 'operations' and request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'operations:index' %}">Notificações</a>
       <a class="{% if request.resolver_match.app_name == 'portability' %}active{% endif %}" href="{% url 'portability:index' %}">Importar e exportar</a>
       <a class="{% if request.resolver_match.url_name == 'demo' %}active{% endif %}" href="{% url 'demo' %}">Demonstração</a>
       <a class="{% if request.path|slice:':7' == '/conta/' %}active{% endif %}" href="{% url 'account_security' %}">Segurança da conta</a>

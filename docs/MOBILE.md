@@ -12,7 +12,9 @@ O menu anterior tinha 13 entradas no mesmo nível. Agora tem cinco áreas:
 | Vendas e produção | Orçamentos, clientes, pedidos, calendário e biblioteca de peças |
 | Estoque | Materiais, compras/fornecedores, histórico e reposição |
 | Financeiro | Recebimentos/caixa e relatórios |
-| Mais | Calculadora, notificações, importar/exportar, demonstração e segurança da conta |
+| Mais | Calculadora, importar/exportar, demonstração e segurança da conta |
+
+Notificações têm acesso direto pelo sino no cabeçalho do celular e no topo da barra lateral, com contador de não lidas da própria conta. O sino não fica dentro de Mais.
 
 No celular e tablet há cabeçalho compacto, atalhos inferiores para Início/Vendas/Estoque/Caixa/Menu e um menu em diálogo nativo. O grupo da página atual vem aberto; os outros podem ser expandidos. O menu tem rolagem própria, mantém o foco dentro dele, fecha por Escape, botão ou toque fora e devolve o foco ao controle que o abriu. Abrir/fechar o menu preserva os campos já preenchidos.
 
@@ -35,10 +37,10 @@ A implementação usa recursos web nativos, não adiciona framework JavaScript o
 
 ## Validação
 
-- 186 testes aprovados no PostgreSQL; SQLite: 181 aprovados e 5 exclusivos do PostgreSQL ignorados.
+- 190 testes aprovados no PostgreSQL; SQLite: 185 aprovados e 5 exclusivos do PostgreSQL ignorados.
 - Jornada completa no Chromium: criação, aprovação, sinal, pedido, consumo, produção, entrega, quitação, compras, importação/exportação, isolamento e demonstração. 31 telas a 360 px, verificações adicionais em 768/1024 px, sem erros JS/5xx, overflow ou violações detectadas pelo axe no conjunto configurado.
-- Roteiro mobile: 12 páginas em 320, 360, 390, 430, 600, 768, 1024 e 1440 px — 96 verificações de layout. Menu por teclado, Escape, toque fora, rolagem, preservação de formulário, mudança de tamanho, orientação paisagem, movimento reduzido e fallback sem JavaScript.
-- Texto ampliado a 200% em 320 px; menu, cartões, desktop e login verificados pelo axe com critérios WCAG 2/2.1/2.2 AA disponíveis na ferramenta.
+- Roteiro mobile: 14 páginas em 320, 360, 390, 430, 600, 768, 1024 e 1440 px — 112 verificações de layout. Menu por teclado, Escape, toque fora, rolagem, preservação de formulário, mudança de tamanho, orientação paisagem, movimento reduzido e fallback sem JavaScript.
+- Texto ampliado a 200% em 320 px; menu, cartões, desktop, login, filtros de movimentos e calendário verificados pelo axe com critérios WCAG 2/2.1/2.2 AA disponíveis na ferramenta.
 
 As verificações usam dados sintéticos em banco isolado. Não foram feitas alterações nas contas do ambiente hospedado. O download do WebKit foi bloqueado pela rede (HTTP 403), portanto **Safari/WebKit e dispositivos reais não foram executados nesta revisão**. É necessário conferir no iPhone/Android: teclado, rotação, barras do navegador, VoiceOver/TalkBack, seleção de arquivos, tabelas e formulários longos.
 
@@ -62,3 +64,5 @@ O roteiro cria uma conta e um material fictícios. Nunca aponte para banco/servi
 ## Ver no ambiente de testes
 
 Depois de integrar o PR, no serviço Render selecione **Manual Deploy → Deploy latest commit**. O build gera novos nomes de CSS/JS no manifesto. Não é necessário editar variáveis, recriar banco, gerar novos convites ou sincronizar o Blueprint para esta mudança. Se o celular ainda mostrar a tela anterior, recarregue a página; a atualização não força recarregamento de formulários abertos.
+
+Os filtros e estados vazios de movimentos/calendário foram refinados depois do primeiro PR mobile. Veja [AJUSTES_RELATORIOS.md](AJUSTES_RELATORIOS.md) para capturas e validação.

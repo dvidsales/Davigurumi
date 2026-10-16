@@ -1,3 +1,11 @@
+# Ajustes de relatórios e notificações — estado atual
+
+Branch `fix/report-filters-and-notifications`, após PR #14 incorporado. Notificações foram retiradas de Mais e têm sino persistente com contador por proprietário. Movimentos/calendário têm filtros padronizados, estados vazios/erros distintos e agenda agrupada; filtros adicionais do calendário podem ser expandidos. Sem migrations ou mudanças na configuração do Render.
+
+190 testes PostgreSQL; SQLite 185 aprovados/5 ignorados; 112 verificações responsivas; jornada completa em 31 telas. Capturas e detalhes em [AJUSTES_RELATORIOS.md](AJUSTES_RELATORIOS.md). Não apagar `.local/` ou fazer merge/deploy sem autorização.
+
+## Histórico anterior
+
 # Interface mobile — atualização atual
 
 Branch `feat/mobile-first-navigation`, após PR #13 incorporado na main. Navegação reduzida a cinco áreas com submenus, cabeçalho compacto e barra inferior no celular; desktop com barra lateral agrupada. Formulários, filtros, tabelas simples em cartões e login adaptados. Nenhuma mudança em banco, permissões, credenciais ou cálculos.

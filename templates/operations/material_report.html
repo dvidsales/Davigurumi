@@ -1,1 +1,34 @@
-{% extends 'base.html' %}{% block content %}<header class="page-heading"><h1>Movimentos por material</h1><p>Histórico físico e custo da camada utilizada, inclusive compensações e materiais arquivados. Variação de valor do estoque não representa pagamento nem lucro.</p></header><section class="card"><form method="get">{{ form.as_p }}<button class="button">Filtrar</button> <button class="button secondary" name="export" value="csv">Exportar CSV</button> <button class="button secondary" name="export" value="xlsx">Exportar XLSX</button></form></section><section class="card"><div class="table-wrap" tabindex="0" role="region" aria-label="Tabela rolável"><table><thead><tr><th>Data</th><th>Material</th><th>Operação</th><th>Quantidade</th><th>Custo unitário histórico</th><th>Motivo</th></tr></thead><tbody>{% for movement in page_obj %}<tr><td>{{ movement.created_at|date:'d/m/Y H:i' }}</td><td>{{ movement.material.name }}</td><td>{{ movement.get_kind_display }}{% if movement.reverses_id %} · compensação{% endif %}</td><td>{{ movement.quantity|floatformat:'-6' }} {{ movement.material.unit }}</td><td>{% if movement.unit_cost is not None %}R$ {{ movement.unit_cost|floatformat:'-6' }}{% else %}Desconhecido{% endif %}</td><td>{{ movement.reason }}</td></tr>{% empty %}<tr><td colspan="6">Nenhum movimento no período válido selecionado.</td></tr>{% endfor %}</tbody></table></div>{% if page_obj %}<nav class="pagination">{% if page_obj.has_previous %}<a href="?{{ query }}&amp;page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}<span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?{{ query }}&amp;page={{ page_obj.next_page_number }}">Próxima</a>{% endif %}</nav>{% endif %}</section>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Movimentos por material · Davigurumi{% endblock %}
+{% block content %}
+<header class="page-heading report-heading"><div>
+  <a class="back" href="{% url 'materials:index' %}">← Materiais e estoque</a>
+  <span class="eyebrow">ESTOQUE · HISTÓRICO</span><h1>Movimentos por material</h1>
+  <p>Acompanhe entradas, saídas e ajustes do seu estoque.</p>
+</div></header>
+<section class="card report-filter-card" aria-labelledby="movement-filters-title">
+  <div class="report-section-heading"><span class="report-section-icon">{% include 'navigation/icon.html' with icon='history' %}</span><div><h2 id="movement-filters-title">Consultar movimentações</h2><p>Escolha um período e, se quiser, um material.</p></div></div>
+  <form method="get">
+    {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="report-filter-grid movement-filter-grid">
+      {% include 'filter_field.html' with field=form.start field_label='Data inicial' %}
+      {% include 'filter_field.html' with field=form.end field_label='Data final' %}
+      {% include 'filter_field.html' with field=form.material %}
+    </div>
+    <div class="report-filter-footer"><div class="report-primary-actions"><button class="button" type="submit">Filtrar movimentos</button><a class="filter-reset" href="{% url 'operations:material_report' %}">Limpar filtros</a></div>
+      <div class="report-export-actions"><span>Exportar resultado</span><div><button class="button secondary" type="submit" aria-label="Exportar CSV" name="export" value="csv">CSV</button><button class="button secondary" type="submit" aria-label="Exportar XLSX" name="export" value="xlsx">XLSX</button></div></div>
+    </div>
+  </form>
+</section>
+<section class="card report-results" aria-labelledby="movement-results-title">
+  <div class="report-results-heading"><h2 id="movement-results-title">Movimentações</h2>{% if page_obj %}<span class="badge">{{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}</span>{% endif %}</div>
+  {% if form.errors %}<div class="report-empty"><h3>Revise os filtros</h3><p>Corrija os campos indicados acima para consultar os movimentos.</p></div>
+  {% elif page_obj.object_list %}
+  <div class="table-wrap" tabindex="0" role="region" aria-label="Movimentações de estoque"><table><caption class="visually-hidden">Movimentos no período e material selecionados</caption><thead><tr><th scope="col">Data</th><th scope="col">Material</th><th scope="col">Operação</th><th scope="col">Quantidade</th><th scope="col">Custo unitário histórico</th><th scope="col">Motivo</th></tr></thead><tbody>
+  {% for movement in page_obj %}<tr><td>{{ movement.created_at|date:'d/m/Y H:i' }}</td><th scope="row">{{ movement.material.name }}</th><td>{{ movement.get_kind_display }}{% if movement.reverses_id %} · compensação{% endif %}</td><td>{{ movement.quantity|floatformat:'-6' }} {{ movement.material.unit }}</td><td>{% if movement.unit_cost is not None %}R$ {{ movement.unit_cost|floatformat:'-6' }}{% else %}Desconhecido{% endif %}</td><td>{{ movement.reason }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  <nav class="pagination" aria-label="Páginas de movimentações">{% if page_obj.has_previous %}<a href="?{{ query }}&amp;page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}<span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?{{ query }}&amp;page={{ page_obj.next_page_number }}">Próxima</a>{% endif %}</nav>
+  {% else %}<div class="report-empty"><span class="report-empty-icon">{% include 'navigation/icon.html' with icon='history' %}</span><h3>Nenhum movimento neste período</h3><p>Experimente outras datas ou selecione outro material.</p><a href="{% url 'operations:material_report' %}">Voltar ao período padrão</a></div>{% endif %}
+  <p class="report-footnote">Inclui materiais arquivados e compensações. O custo é o da camada utilizada; a variação do estoque não representa pagamento nem lucro.</p>
+</section>
+{% endblock %}

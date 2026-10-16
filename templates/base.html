@@ -15,10 +15,11 @@
 {% if user.is_authenticated %}
 <header class="mobile-header">
   <a class="brand" href="{% url 'dashboard' %}"><span class="brand-mark" aria-hidden="true">D</span>Davigurumi</a>
-  <button class="menu-trigger" aria-label="Abrir menu" type="button" data-menu-open aria-controls="mobile-menu" aria-expanded="false" aria-haspopup="dialog">{% include 'navigation/icon.html' with icon='menu' %}<span>Menu</span></button>
+  <div class="header-actions">{% include 'navigation/notifications.html' %}
+  <button class="menu-trigger" aria-label="Abrir menu" type="button" data-menu-open aria-controls="mobile-menu" aria-expanded="false" aria-haspopup="dialog">{% include 'navigation/icon.html' with icon='menu' %}<span>Menu</span></button></div>
 </header>
 <aside class="sidebar" aria-label="Menu do ateliê">
-  <a class="brand" href="{% url 'dashboard' %}"><span class="brand-mark" aria-hidden="true">D</span>Davigurumi</a>
+  <div class="sidebar-brand-row"><a class="brand" href="{% url 'dashboard' %}"><span class="brand-mark" aria-hidden="true">D</span>Davigurumi</a>{% include 'navigation/notifications.html' %}</div>
   <p class="sidebar-label">SEU ATELIÊ, EM ORDEM</p>
   {% include 'navigation/links.html' %}
 </aside>
