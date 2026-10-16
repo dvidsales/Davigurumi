@@ -1,4 +1,5 @@
 "use strict";
+document.documentElement.classList.add("js-ready");
 if ("serviceWorker" in navigator && window.isSecureContext) {
   navigator.serviceWorker.register("/service-worker.js").catch(() => {});
 }
@@ -31,20 +32,87 @@ for (const element of document.querySelectorAll(".timer[data-start]")) {
   render(); setInterval(render, 1000);
 }
 
-// Exact resolved route URLs also cover namespaces in nested installations.
-const navigation = document.querySelector('nav[aria-label="Navegação principal"]');
-if (navigation) {
-  const links = [...navigation.querySelectorAll('a')];
-  const match = links.filter(link => {
-    const path = new URL(link.href).pathname;
-    return path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
-  }).sort((a,b) => new URL(b.href).pathname.length - new URL(a.href).pathname.length)[0];
-  if (match) {
+// Route-aware navigation in desktop, mobile dialog and no-script fallback.
+function markNavigation() {
+  for (const navigation of document.querySelectorAll('[data-workspace-nav]')) {
+    const links = [...navigation.querySelectorAll('a')];
+    const match = links.filter(link => {
+      const url = new URL(link.href);
+      if (url.hash && url.hash !== location.hash) return false;
+      return url.pathname === '/' ? location.pathname === '/' : location.pathname.startsWith(url.pathname);
+    }).sort((a, b) => {
+      const left = new URL(a.href), right = new URL(b.href);
+      return right.pathname.length - left.pathname.length || right.hash.length - left.hash.length;
+    })[0] || navigation.querySelector('a.active');
     for (const link of links) { link.classList.remove('active'); link.removeAttribute('aria-current'); }
-    match.classList.add('active'); match.setAttribute('aria-current','page');
-  } else {
-    const active = navigation.querySelector('a.active');
-    if(active) active.setAttribute('aria-current','page');
+    if (match) {
+      match.classList.add('active'); match.setAttribute('aria-current', 'page');
+      const group = match.closest('details'); if (group) group.open = true;
+    }
+  }
+}
+markNavigation();
+window.addEventListener('hashchange', markNavigation);
+const mobileMenu = document.getElementById('mobile-menu');
+const menuTriggers = [...document.querySelectorAll('[data-menu-open]')];
+if (mobileMenu) {
+  const desktopViewport = window.matchMedia('(min-width: 1100px)');
+  const closeMenu = () => mobileMenu.close();
+  for (const trigger of menuTriggers) trigger.addEventListener('click', () => {
+    if (!mobileMenu.open) mobileMenu.showModal();
+    document.body.classList.add('menu-open');
+    for (const control of menuTriggers) control.setAttribute('aria-expanded', 'true');
+  });
+  mobileMenu.querySelector('[data-menu-close]').addEventListener('click', closeMenu);
+  mobileMenu.addEventListener('keydown', event => {
+    if (event.key !== 'Tab') return;
+    const controls = [...mobileMenu.querySelectorAll('a[href], button:not([disabled]), summary, [tabindex="0"]')]
+      .filter(element => element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden');
+    const first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault(); last?.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault(); first?.focus();
+    }
+  });
+  mobileMenu.addEventListener('close', () => {
+    document.body.classList.remove('menu-open');
+    for (const control of menuTriggers) control.setAttribute('aria-expanded', 'false');
+  });
+  mobileMenu.addEventListener('click', event => {
+    const rect = mobileMenu.getBoundingClientRect();
+    if (event.target === mobileMenu && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) closeMenu();
+  });
+  desktopViewport.addEventListener('change', event => {
+    if (event.matches && mobileMenu.open) {
+      closeMenu();
+      document.querySelector('.sidebar a.active')?.focus({preventScroll: true});
+    }
+  });
+}
+
+// Keep real table headers and explicit roles when simple lists reflow into cards.
+for (const table of document.querySelectorAll('.table-scroll table, .table-wrap table')) {
+  const headers = [...table.querySelectorAll('thead tr:first-child > th')];
+  const rows = [...table.querySelectorAll('tbody > tr')];
+  if (headers.length < 2 || !rows.length || table.querySelector('thead tr:nth-child(2)') ||
+      [...table.querySelectorAll('th,td')].some(cell => cell.colSpan > 1 || cell.rowSpan > 1) ||
+      rows.some(row => row.children.length !== headers.length)) continue;
+  table.classList.add('mobile-cards'); table.setAttribute('role', 'table');
+  table.querySelector('thead').setAttribute('role', 'rowgroup');
+  table.querySelector('thead tr').setAttribute('role', 'row');
+  for (const header of headers) { header.scope = 'col'; header.setAttribute('role', 'columnheader'); }
+  table.querySelector('tbody').setAttribute('role', 'rowgroup');
+  for (const row of rows) {
+    row.setAttribute('role', 'row');
+    [...row.children].forEach((cell, index) => {
+      cell.setAttribute('role', cell.tagName === 'TH' ? 'rowheader' : 'cell');
+      if (cell.tagName === 'TH') cell.scope = 'row';
+      const label = document.createElement('span'); label.className = 'cell-label';
+      label.setAttribute('aria-hidden', 'true'); label.textContent = headers[index].textContent.trim();
+      const value = document.createElement('div'); value.className = 'cell-value';
+      value.append(...cell.childNodes); cell.append(label, value);
+    });
   }
 }
 
@@ -93,4 +161,18 @@ if (pieceForm) {
     if (['quantity','discount','fixed_discount'].includes(field.name) || field.name.startsWith('alternative_')) field.addEventListener('change', () => suggest());
   }
   suggest();
+}
+
+// Numeric keyboards without restricting pasted/localized decimal values.
+for (const input of document.querySelectorAll('input[type=number]')) {
+  if (!input.inputMode) input.inputMode = input.step && input.step !== '1' ? 'decimal' : 'numeric';
+}
+
+// Reserve the real bar height, including safe areas and enlarged text.
+if ('ResizeObserver' in window) {
+  const bottomBar = document.querySelector('.bottom-navigation');
+  if (bottomBar) new ResizeObserver(entries => {
+    const height = Math.ceil(entries[0].target.getBoundingClientRect().height);
+    if (height > 0) document.documentElement.style.setProperty('--bottom-height', `${height}px`);
+  }).observe(bottomBar);
 }

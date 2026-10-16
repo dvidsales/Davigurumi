@@ -32,6 +32,43 @@ jobs:
       - run: python manage.py check
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py test --verbosity 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install browser test tools (development only)
+        run: npm install --prefix /tmp/davigurumi-ui-tools playwright@1.62.1 axe-core@4.11.0 --no-audit --no-fund
+      - name: Mobile navigation and responsive layouts
+        env:
+          NODE_PATH: /tmp/davigurumi-ui-tools/node_modules
+          DAVIGURUMI_SMOKE_ISOLATED: "1"
+          DAVIGURUMI_SMOKE_URL: http://127.0.0.1:8111
+          DAVIGURUMI_AXE_PATH: /tmp/davigurumi-ui-tools/node_modules/axe-core/axe.min.js
+        run: |
+          set -euo pipefail
+          export CHROMIUM_PATH="$(command -v google-chrome || command -v chromium)"
+          python manage.py migrate --noinput
+          python manage.py runserver 127.0.0.1:8111 --noreload > /tmp/davigurumi-ui-server.log 2>&1 &
+          ui_server_pid=$!
+          trap 'kill "$ui_server_pid" 2>/dev/null || true' EXIT
+          ui_ready=0
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail --max-time 2 http://127.0.0.1:8111/healthz/ > /dev/null; then
+              ui_ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ui_ready" != "1" ]; then cat /tmp/davigurumi-ui-server.log; exit 1; fi
+          node --check static/js/app.js
+          node scripts/smoke_mobile.cjs
+      - name: Save mobile review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-review
+          path: /tmp/davigurumi-mobile-review/
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Build production static files
         run: DJANGO_STATIC_MANIFEST=1 python manage.py collectstatic --noinput
       - name: Check production configuration

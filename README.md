@@ -137,3 +137,7 @@ As quatro etapas são links presentes no orçamento, nas condições, na inclus�
 ### Testar com outras pessoas sem orçamento
 
 Foi preparada uma instalação de beta com convites: **Render Free + Supabase Free**, banco e arquivos privados persistentes. Veja o [passo a passo de deploy gratuito](docs/DEPLOY_TESTES_GRATUITO.md) e a [revisão de bugs e segurança](docs/REVISAO_360.md). O `render.yaml` não cria banco/disco pago e não habilita deploy automático. É necessário criar suas contas e configurar as credenciais nos painéis; nenhum serviço externo já está publicado. Confirme a disponibilidade dos planos Free antes de criar recursos.
+
+### Interface para celular
+
+O menu foi reduzido a cinco áreas, com atalhos inferiores no celular e submenus por assunto. Formulários, filtros e listas se adaptam às telas pequenas. Veja a [organização mobile, capturas e validação](docs/MOBILE.md). Após integrar essa atualização, basta **Manual Deploy → Deploy latest commit** no Render, mantendo as variáveis existentes.

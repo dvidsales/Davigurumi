@@ -1,3 +1,11 @@
+# Interface mobile — atualização atual
+
+Branch `feat/mobile-first-navigation`, após PR #13 incorporado na main. Navegação reduzida a cinco áreas com submenus, cabeçalho compacto e barra inferior no celular; desktop com barra lateral agrupada. Formulários, filtros, tabelas simples em cartões e login adaptados. Nenhuma mudança em banco, permissões, credenciais ou cálculos.
+
+Validação: 186 testes PostgreSQL; SQLite 181 aprovados e 5 exclusivos ignorados; jornada completa em 31 telas; roteiro mobile com 96 verificações de layout e auditorias axe em menu/cartões/desktop/login. Detalhes, capturas e limites em [MOBILE.md](MOBILE.md). Safari/WebKit não executado porque a rede bloqueou o download; testar no iPhone real continua pendente. O roteiro mobile também roda no CI. A interface nova depende de integrar o PR e fazer Manual Deploy no Render. Não fazer merge/deploy sem autorização; não apagar `.local/`.
+
+## Histórico anterior
+
 # Estado atual — 08/10/2026
 
 Branch `feat/private-beta-deploy`, baseada na main com PR #11 incorporado. Revisão de bugs e preparação de beta gratuito por convite concluídas no código. Nenhum serviço foi publicado. Leia [REVISAO_360.md](REVISAO_360.md) e [DEPLOY_TESTES_GRATUITO.md](DEPLOY_TESTES_GRATUITO.md). A integração real com Render/Supabase depende das contas do responsável e não foi validada com credenciais reais. Não apagar `.local/`, não fazer merge ou publicar produção sem autorização.
