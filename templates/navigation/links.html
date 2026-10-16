@@ -1,0 +1,40 @@
+<nav class="primary-navigation" aria-label="Navegação principal" data-workspace-nav>
+  <a class="nav-home {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">{% include 'navigation/icon.html' with icon='home' %}<span>Início</span></a>
+  <details class="nav-group" {% if request.resolver_match.app_name == 'sales' or request.resolver_match.app_name == 'production' or request.resolver_match.app_name == 'projects' %}open{% endif %}>
+    <summary>{% include 'navigation/icon.html' with icon='sales' %}<span>Vendas e produção</span></summary>
+    <div class="nav-children">
+      <a class="{% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name != 'clients' and request.resolver_match.url_name != 'client_history' %}active{% endif %}" href="{% url 'sales:index' %}">Orçamentos</a>
+      <a class="{% if request.resolver_match.url_name == 'clients' or request.resolver_match.url_name == 'client_history' %}active{% endif %}" href="{% url 'sales:clients' %}">Clientes</a>
+      <a class="{% if request.resolver_match.app_name == 'production' and request.resolver_match.url_name != 'calendar' %}active{% endif %}" href="{% url 'production:index' %}">Pedidos e produção</a>
+      <a class="{% if request.resolver_match.app_name == 'production' and request.resolver_match.url_name == 'calendar' %}active{% endif %}" href="{% url 'production:calendar' %}">Calendário</a>
+      <a class="{% if request.resolver_match.app_name == 'projects' %}active{% endif %}" href="{% url 'projects:index' %}">Biblioteca de peças</a>
+    </div>
+  </details>
+  <details class="nav-group" {% if request.resolver_match.app_name == 'materials' or request.resolver_match.app_name == 'purchasing' or request.resolver_match.url_name == 'material_report' %}open{% endif %}>
+    <summary>{% include 'navigation/icon.html' with icon='stock' %}<span>Estoque</span></summary>
+    <div class="nav-children">
+      <a class="{% if request.resolver_match.app_name == 'materials' %}active{% endif %}" href="{% url 'materials:index' %}">Materiais e estoque</a>
+      <a class="{% if request.resolver_match.app_name == 'purchasing' %}active{% endif %}" href="{% url 'purchasing:index' %}">Compras e fornecedores</a>
+      <a class="{% if request.resolver_match.url_name == 'material_report' %}active{% endif %}" href="{% url 'operations:material_report' %}">Histórico de estoque</a>
+      <a href="{% url 'operations:reports' %}#reposicao">Reposição</a>
+    </div>
+  </details>
+  <details class="nav-group" {% if request.resolver_match.app_name == 'finance' or request.resolver_match.url_name == 'reports' %}open{% endif %}>
+    <summary>{% include 'navigation/icon.html' with icon='money' %}<span>Financeiro</span></summary>
+    <div class="nav-children">
+      <a class="{% if request.resolver_match.app_name == 'finance' %}active{% endif %}" href="{% url 'finance:index' %}">Recebimentos e caixa</a>
+      <a class="{% if request.resolver_match.url_name == 'reports' %}active{% endif %}" href="{% url 'operations:reports' %}">Relatórios</a>
+    </div>
+  </details>
+  <details class="nav-group" {% if request.resolver_match.app_name == 'pricing' or request.resolver_match.app_name == 'portability' or request.resolver_match.url_name == 'demo' or request.path|slice:':7' == '/conta/' or request.resolver_match.app_name == 'operations' and request.resolver_match.url_name == 'index' %}open{% endif %}>
+    <summary>{% include 'navigation/icon.html' with icon='menu' %}<span>Mais</span></summary>
+    <div class="nav-children">
+      <a class="{% if request.resolver_match.app_name == 'pricing' %}active{% endif %}" href="{% url 'pricing:calculator' %}">Calculadora de preços</a>
+      <a class="{% if request.resolver_match.app_name == 'operations' and request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'operations:index' %}">Notificações</a>
+      <a class="{% if request.resolver_match.app_name == 'portability' %}active{% endif %}" href="{% url 'portability:index' %}">Importar e exportar</a>
+      <a class="{% if request.resolver_match.url_name == 'demo' %}active{% endif %}" href="{% url 'demo' %}">Demonstração</a>
+      <a class="{% if request.path|slice:':7' == '/conta/' %}active{% endif %}" href="{% url 'account_security' %}">Segurança da conta</a>
+    </div>
+  </details>
+</nav>
+<div class="navigation-account"><span class="account-avatar" aria-hidden="true">{{ user.first_name|default:user.username|first|upper }}</span><div><span class="account-caption">Sua conta</span><strong>{{ user.first_name|default:user.username }}</strong></div><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="logout" type="submit">Sair</button></form></div>
