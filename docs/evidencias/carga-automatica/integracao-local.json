@@ -1,0 +1,559 @@
+{
+  "schema": 1,
+  "method": "HTTP completo via Playwright APIRequestContext; não mede tempo puro de servidor ou renderização",
+  "started_at": "2026-11-06T13:31:45.067Z",
+  "target": "http://127.0.0.1:8130",
+  "mode": "local-smoke",
+  "release": "unknown",
+  "fixture": {
+    "reused": true,
+    "version": "v1",
+    "created": null,
+    "setup_steps_ms": [],
+    "warning": "Tempos de preparo incluem navegador e não são amostras de carga HTTP. Não há exclusão automática. Repetir após preparo interrompido pode deixar dados parciais."
+  },
+  "phases": [
+    {
+      "name": "1-sessoes",
+      "virtual_sessions": 1,
+      "max_inflight": 1,
+      "max_started_requests_per_second": 1.5,
+      "per_route_target": 1,
+      "completed": 8,
+      "seconds": 4.75
+    },
+    {
+      "name": "3-sessoes",
+      "virtual_sessions": 3,
+      "max_inflight": 1,
+      "max_started_requests_per_second": 1.5,
+      "per_route_target": 1,
+      "completed": 8,
+      "seconds": 4.74
+    },
+    {
+      "name": "5-sessoes",
+      "virtual_sessions": 5,
+      "max_inflight": 1,
+      "max_started_requests_per_second": 1.5,
+      "per_route_target": 1,
+      "completed": 8,
+      "seconds": 4.74
+    }
+  ],
+  "samples": [
+    {
+      "phase": "1-sessoes",
+      "route": "/",
+      "status": 200,
+      "ok": true,
+      "bytes": 18025,
+      "ms": 115.53
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/materiais/",
+      "status": 200,
+      "ok": true,
+      "bytes": 17029,
+      "ms": 44.47
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/orcamentos/",
+      "status": 200,
+      "ok": true,
+      "bytes": 15200,
+      "ms": 35.28
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/pedidos/",
+      "status": 200,
+      "ok": true,
+      "bytes": 15498,
+      "ms": 38.61
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/pedidos/calendario/",
+      "status": 200,
+      "ok": true,
+      "bytes": 19426,
+      "ms": 64.43
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/notificacoes/relatorios/",
+      "status": 200,
+      "ok": true,
+      "bytes": 18996,
+      "ms": 75.27
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/financeiro/",
+      "status": 200,
+      "ok": true,
+      "bytes": 16438,
+      "ms": 35.27
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/pedidos/:pedido-sintetico/",
+      "status": 200,
+      "ok": true,
+      "bytes": 20351,
+      "ms": 83.26
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/",
+      "status": 200,
+      "ok": true,
+      "bytes": 18025,
+      "ms": 123.12
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/materiais/",
+      "status": 200,
+      "ok": true,
+      "bytes": 17029,
+      "ms": 39.31
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/orcamentos/",
+      "status": 200,
+      "ok": true,
+      "bytes": 15200,
+      "ms": 55.12
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/pedidos/",
+      "status": 200,
+      "ok": true,
+      "bytes": 15498,
+      "ms": 43.74
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/pedidos/calendario/",
+      "status": 200,
+      "ok": true,
+      "bytes": 19426,
+      "ms": 64.35
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/notificacoes/relatorios/",
+      "status": 200,
+      "ok": true,
+      "bytes": 18996,
+      "ms": 81.37
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/financeiro/",
+      "status": 200,
+      "ok": true,
+      "bytes": 16438,
+      "ms": 39.99
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/pedidos/:pedido-sintetico/",
+      "status": 200,
+      "ok": true,
+      "bytes": 20351,
+      "ms": 75.55
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/",
+      "status": 200,
+      "ok": true,
+      "bytes": 18025,
+      "ms": 106.1
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/materiais/",
+      "status": 200,
+      "ok": true,
+      "bytes": 17029,
+      "ms": 42.65
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/orcamentos/",
+      "status": 200,
+      "ok": true,
+      "bytes": 15200,
+      "ms": 37.86
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/pedidos/",
+      "status": 200,
+      "ok": true,
+      "bytes": 15498,
+      "ms": 76.08
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/pedidos/calendario/",
+      "status": 200,
+      "ok": true,
+      "bytes": 19426,
+      "ms": 63.8
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/notificacoes/relatorios/",
+      "status": 200,
+      "ok": true,
+      "bytes": 18996,
+      "ms": 84.65
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/financeiro/",
+      "status": 200,
+      "ok": true,
+      "bytes": 16438,
+      "ms": 48.26
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/pedidos/:pedido-sintetico/",
+      "status": 200,
+      "ok": true,
+      "bytes": 20351,
+      "ms": 72.91
+    }
+  ],
+  "aborted": null,
+  "preparation_step": "load",
+  "http_requests": 49,
+  "first_health_ms": 70,
+  "setup_requests": 8,
+  "finished_at": "2026-11-06T13:32:05.919Z",
+  "summary": [
+    {
+      "phase": "1-sessoes",
+      "route": "/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 115.53,
+      "p95_ms": 115.53,
+      "max_ms": 115.53,
+      "response_bytes": 18025
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/materiais/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 44.47,
+      "p95_ms": 44.47,
+      "max_ms": 44.47,
+      "response_bytes": 17029
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/orcamentos/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 35.28,
+      "p95_ms": 35.28,
+      "max_ms": 35.28,
+      "response_bytes": 15200
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/pedidos/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 38.61,
+      "p95_ms": 38.61,
+      "max_ms": 38.61,
+      "response_bytes": 15498
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/pedidos/calendario/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 64.43,
+      "p95_ms": 64.43,
+      "max_ms": 64.43,
+      "response_bytes": 19426
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/notificacoes/relatorios/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 75.27,
+      "p95_ms": 75.27,
+      "max_ms": 75.27,
+      "response_bytes": 18996
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/financeiro/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 35.27,
+      "p95_ms": 35.27,
+      "max_ms": 35.27,
+      "response_bytes": 16438
+    },
+    {
+      "phase": "1-sessoes",
+      "route": "/pedidos/:pedido-sintetico/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 83.26,
+      "p95_ms": 83.26,
+      "max_ms": 83.26,
+      "response_bytes": 20351
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 123.12,
+      "p95_ms": 123.12,
+      "max_ms": 123.12,
+      "response_bytes": 18025
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/materiais/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 39.31,
+      "p95_ms": 39.31,
+      "max_ms": 39.31,
+      "response_bytes": 17029
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/orcamentos/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 55.12,
+      "p95_ms": 55.12,
+      "max_ms": 55.12,
+      "response_bytes": 15200
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/pedidos/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 43.74,
+      "p95_ms": 43.74,
+      "max_ms": 43.74,
+      "response_bytes": 15498
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/pedidos/calendario/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 64.35,
+      "p95_ms": 64.35,
+      "max_ms": 64.35,
+      "response_bytes": 19426
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/notificacoes/relatorios/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 81.37,
+      "p95_ms": 81.37,
+      "max_ms": 81.37,
+      "response_bytes": 18996
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/financeiro/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 39.99,
+      "p95_ms": 39.99,
+      "max_ms": 39.99,
+      "response_bytes": 16438
+    },
+    {
+      "phase": "3-sessoes",
+      "route": "/pedidos/:pedido-sintetico/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 75.55,
+      "p95_ms": 75.55,
+      "max_ms": 75.55,
+      "response_bytes": 20351
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 106.1,
+      "p95_ms": 106.1,
+      "max_ms": 106.1,
+      "response_bytes": 18025
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/materiais/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 42.65,
+      "p95_ms": 42.65,
+      "max_ms": 42.65,
+      "response_bytes": 17029
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/orcamentos/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 37.86,
+      "p95_ms": 37.86,
+      "max_ms": 37.86,
+      "response_bytes": 15200
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/pedidos/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 76.08,
+      "p95_ms": 76.08,
+      "max_ms": 76.08,
+      "response_bytes": 15498
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/pedidos/calendario/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 63.8,
+      "p95_ms": 63.8,
+      "max_ms": 63.8,
+      "response_bytes": 19426
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/notificacoes/relatorios/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 84.65,
+      "p95_ms": 84.65,
+      "max_ms": 84.65,
+      "response_bytes": 18996
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/financeiro/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 48.26,
+      "p95_ms": 48.26,
+      "max_ms": 48.26,
+      "response_bytes": 16438
+    },
+    {
+      "phase": "5-sessoes",
+      "route": "/pedidos/:pedido-sintetico/",
+      "samples": 1,
+      "errors": 0,
+      "statuses": {
+        "200": 1
+      },
+      "median_ms": 72.91,
+      "p95_ms": 72.91,
+      "max_ms": 72.91,
+      "response_bytes": 20351
+    }
+  ],
+  "result": "completed"
+}
