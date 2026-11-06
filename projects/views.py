@@ -211,7 +211,7 @@ def edit(request, pk):
         "generic_form.html",
         {
             "form": form,
-            "heading": "Editar projeto",
+            "heading": "Editar peça",
             "description": "Cria uma revisão. Orçamentos e fichas anteriores preservam seus valores.",
         },
     )

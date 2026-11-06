@@ -19,7 +19,7 @@ class ProjectForm(forms.Form):
     def clean_reference_policy(self):
         return self.cleaned_data.get("reference_policy") or "available"
 
-    name = forms.CharField(label="Nome do projeto", max_length=160)
+    name = forms.CharField(label="Nome da peça", max_length=160)
     description = forms.CharField(
         label="Descrição que pode ser apresentada ao cliente",
         max_length=2000,

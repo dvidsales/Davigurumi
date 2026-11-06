@@ -75,6 +75,13 @@ def reports(request):
                 owner=request.user, created_at__date__range=(start, end)
             )
             .select_related("current_version", "approved_version__quote__client")
+            .defer(
+                *(
+                    relation + "__" + field
+                    for relation in ("current_version", "approved_version")
+                    for field in ("pdf", "public_snapshot", "internal_snapshot")
+                )
+            )
             .prefetch_related("allocations__refunds")
         )
         if form.cleaned_data["status"]:
@@ -89,7 +96,11 @@ def reports(request):
                     "project"
                 ]
             ).distinct()
-        context.update(cash=cash_period(request.user, start, end), orders=orders)
+        context.update(
+            cash=cash_period(request.user, start, end),
+            period_start=start,
+            period_end=end,
+        )
         if request.GET.get("export") in {"csv", "xlsx"}:
             if orders.count() > 5000:
                 form.add_error(
@@ -97,6 +108,15 @@ def reports(request):
                 )
             else:
                 return export_order_report(orders, request.GET["export"])
+        if not form.errors:
+            context["page_obj"] = Paginator(orders, 25).get_page(
+                request.GET.get("page")
+            )
+            context["orders"] = context["page_obj"].object_list
+            query = data.copy()
+            query.pop("page", None)
+            query.pop("export", None)
+            context["query"] = query.urlencode()
     return render(request, "operations/reports.html", context)
 
 
@@ -140,7 +160,7 @@ def material_report(request):
         context["page_obj"] = Paginator(movements, 100).get_page(
             request.GET.get("page")
         )
-        query = request.GET.copy()
+        query = data.copy()
         query.pop("page", None)
         query.pop("export", None)
         context["query"] = query.urlencode()

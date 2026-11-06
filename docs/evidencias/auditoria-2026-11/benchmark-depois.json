@@ -1,0 +1,54 @@
+{
+  "method": "local Django test client; warm; SQL measured; no browser/network/cold-start",
+  "samples": 30,
+  "database": "postgresql",
+  "routes": {
+    "/": {
+      "median_ms": 48.76,
+      "p95_ms": 62.1,
+      "queries_min": 26,
+      "queries_max": 26,
+      "response_bytes_max": 17332
+    },
+    "/materiais/": {
+      "median_ms": 14.4,
+      "p95_ms": 17.49,
+      "queries_min": 7,
+      "queries_max": 7,
+      "response_bytes_max": 16145
+    },
+    "/orcamentos/": {
+      "median_ms": 11.84,
+      "p95_ms": 15.32,
+      "queries_min": 5,
+      "queries_max": 5,
+      "response_bytes_max": 15010
+    },
+    "/pedidos/": {
+      "median_ms": 19.71,
+      "p95_ms": 25.2,
+      "queries_min": 7,
+      "queries_max": 7,
+      "response_bytes_max": 15321
+    },
+    "/pedidos/calendario/": {
+      "median_ms": 33.42,
+      "p95_ms": 45.56,
+      "queries_min": 14,
+      "queries_max": 14,
+      "response_bytes_max": 18576
+    },
+    "/notificacoes/relatorios/": {
+      "median_ms": 44.77,
+      "p95_ms": 51.91,
+      "queries_min": 21,
+      "queries_max": 21,
+      "response_bytes_max": 18522
+    }
+  },
+  "cost_summary_50_sessions_queries": 6,
+  "query_plans": {
+    "sessions": "Bitmap Heap Scan on production_productionsession  (cost=4.17..35.81 rows=3 width=130)\n  Recheck Cond: (item_id = '0c53591e-163a-4621-9271-15fdbd33d13b'::uuid)\n  ->  Bitmap Index Scan on production_productionsession_item_id_7c6fe2bd  (cost=0.00..4.17 rows=3 width=0)\n        Index Cond: (item_id = '0c53591e-163a-4621-9271-15fdbd33d13b'::uuid)\n  SubPlan 1\n    ->  Limit  (cost=8.17..8.18 rows=1 width=20)\n          ->  Sort  (cost=8.17..8.18 rows=1 width=20)\n                Sort Key: u0.created_at DESC, u0.id DESC\n                ->  Index Scan using production_sessioncorrection_session_id_34aa12a6 on production_sessioncorrection u0  (cost=0.14..8.16 rows=1 width=20)\n                      Index Cond: (session_id = production_productionsession.id)",
+    "stock": "Incremental Sort  (cost=40.88..40.93 rows=2 width=1933)\n  Sort Key: materials_material.name, materials_material.id\n  Presorted Key: materials_material.name\n  ->  Index Scan using materials_m_owner_i_1c9ac0_idx on materials_material  (cost=0.14..40.88 rows=1 width=1933)\n        Index Cond: (owner_id = 'b884affc-651e-4d74-b305-36de17396b4b'::uuid)\n        SubPlan 1\n          ->  GroupAggregate  (cost=0.14..8.18 rows=1 width=48)\n                ->  Index Scan using materials_stockmovement_material_id_6423a74c on materials_stockmovement u0  (cost=0.14..8.16 rows=1 width=32)\n                      Index Cond: (material_id = materials_material.id)\n        SubPlan 2\n          ->  GroupAggregate  (cost=0.15..8.18 rows=1 width=48)\n                ->  Index Scan using materials_costlayer_material_id_f8671f99 on materials_costlayer u0_1  (cost=0.15..8.17 rows=1 width=32)\n                      Index Cond: (material_id = materials_material.id)\n        SubPlan 3\n          ->  GroupAggregate  (cost=0.14..8.18 rows=1 width=48)\n                ->  Index Scan using materials_stockmovement_material_id_6423a74c on materials_stockmovement u0_2  (cost=0.14..8.16 rows=1 width=32)\n                      Index Cond: (material_id = materials_material.id)\n        SubPlan 4\n          ->  GroupAggregate  (cost=0.15..8.18 rows=1 width=48)\n                ->  Index Scan using materials_costlayer_material_id_f8671f99 on materials_costlayer u0_3  (cost=0.15..8.17 rows=1 width=32)\n                      Index Cond: (material_id = materials_material.id)"
+  }
+}

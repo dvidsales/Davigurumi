@@ -2,7 +2,7 @@ from decimal import Decimal
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db.models import F
+from django.db.models import F, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -19,14 +19,10 @@ def index(request):
     payments = Payment.objects.filter(owner=request.user).order_by(
         "-date", "-created_at"
     )
-    receipts = sum((row.amount for row in payments), Decimal(0))
-    refunds = sum(
-        (
-            row.amount
-            for row in Refund.objects.filter(allocation__payment__owner=request.user)
-        ),
-        Decimal(0),
-    )
+    receipts = payments.aggregate(total=Sum("amount"))["total"] or Decimal(0)
+    refunds = Refund.objects.filter(allocation__payment__owner=request.user).aggregate(
+        total=Sum("amount")
+    )["total"] or Decimal(0)
     return render(
         request,
         "finance/index.html",
@@ -38,7 +34,9 @@ def index(request):
                 quote__owner=request.user,
                 status="approved",
                 quote__current_version=F("pk"),
-            ).select_related("quote", "quote__client")[:20],
+            )
+            .select_related("quote", "quote__client")
+            .defer("pdf", "public_snapshot", "internal_snapshot")[:20],
             "receipts": receipts,
             "refunds": refunds,
             "net": receipts - refunds,

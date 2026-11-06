@@ -1,4 +1,5 @@
 import json
+import hashlib
 from pathlib import Path
 from django.http import HttpResponse, JsonResponse
 from django.conf import settings
@@ -53,7 +54,16 @@ def service_worker(request):
         (
             "const ASSETS = " + json.dumps(assets) + ";"
             if line.startswith("const ASSETS = ")
-            else line
+            else (
+                "const PUBLIC_CACHE = "
+                + json.dumps(
+                    "davigurumi-public-"
+                    + hashlib.sha256(json.dumps(assets).encode()).hexdigest()[:16]
+                )
+                + ";"
+                if line.startswith("const PUBLIC_CACHE = ")
+                else line
+            )
         )
         for line in source.splitlines()
     )

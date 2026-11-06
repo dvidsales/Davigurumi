@@ -77,8 +77,12 @@ def index(request):
         "sales/index.html",
         {
             "page_obj": Paginator(
-                Quote.objects.filter(owner=request.user).select_related(
-                    "client", "current_version"
+                Quote.objects.filter(owner=request.user)
+                .select_related("client", "current_version")
+                .defer(
+                    "current_version__pdf",
+                    "current_version__public_snapshot",
+                    "current_version__internal_snapshot",
                 ),
                 20,
             ).get_page(request.GET.get("page"))

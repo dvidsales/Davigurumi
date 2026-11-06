@@ -106,7 +106,20 @@ class Consumption(models.Model):
     movement = models.OneToOneField("materials.StockMovement", on_delete=models.PROTECT)
 
 
+class ProductionSessionQuerySet(models.QuerySet):
+    def with_effective_seconds(self):
+        # Scalar subquery avoids loading the correction history and preserves ties.
+        latest = (
+            SessionCorrection.objects.filter(session_id=models.OuterRef("pk"))
+            .order_by("-created_at", "-id")
+            .values("seconds")[:1]
+        )
+        return self.annotate(latest_corrected_seconds=models.Subquery(latest))
+
+
 class ProductionSession(models.Model):
+    objects = ProductionSessionQuerySet.as_manager()
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     item = models.ForeignKey(
@@ -138,6 +151,12 @@ class ProductionSession(models.Model):
 
     @property
     def effective_seconds(self):
+        if hasattr(self, "latest_corrected_seconds"):
+            return (
+                self.seconds
+                if self.latest_corrected_seconds is None
+                else self.latest_corrected_seconds
+            )
         correction = self.corrections.order_by("-created_at", "-id").first()
         return correction.seconds if correction else self.seconds
 

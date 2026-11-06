@@ -1,3 +1,18 @@
+# Revisão da auditoria — estado atual
+
+Branch local `perf/auditoria-consultas-ux`, base `79b0de7`. Consultas em lote,
+projeções, relatório paginado, início por tarefas, custo por embalagem,
+instrumentação opcional e Pillow 13.0.0. Nenhuma publicação ou alteração de produção.
+
+210 testes PostgreSQL aprovados; SQLite 205 aprovados/5 pulados. Smoke móvel com
+112 layouts/9 casos axe, revisão adicional com 32 layouts/8 casos axe e jornada
+completa em 31 rotas. Ver [RESULTADOS_AUDITORIA_2026_11.md](RESULTADOS_AUDITORIA_2026_11.md)
+para métricas, comandos, limites e pendências. Não apagar `.local/`.
+
+---
+
+## Histórico anterior
+
 # Ajustes de relatórios e notificações — estado atual
 
 Branch `fix/report-filters-and-notifications`, após PR #14 incorporado. Notificações foram retiradas de Mais e têm sino persistente com contador por proprietário. Movimentos/calendário têm filtros padronizados, estados vazios/erros distintos e agenda agrupada; filtros adicionais do calendário podem ser expandidos. Sem migrations ou mudanças na configuração do Render.

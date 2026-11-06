@@ -1,5 +1,5 @@
 import uuid
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from django import forms
 from .models import Material
 
@@ -21,6 +21,25 @@ class MaterialForm(forms.ModelForm):
         decimal_places=6,
         required=False,
         help_text="Deixe em branco se desconhecido. Zero significa custo conhecido igual a zero.",
+    )
+
+    use_package_cost = forms.BooleanField(
+        label="Calcular custo pela embalagem", required=False
+    )
+    package_cost = forms.DecimalField(
+        label="Preço de uma embalagem (R$)",
+        min_value=0,
+        max_digits=12,
+        decimal_places=2,
+        required=False,
+    )
+    package_quantity = forms.DecimalField(
+        label="Quantidade por embalagem",
+        min_value=Decimal(".000001"),
+        max_digits=12,
+        decimal_places=6,
+        required=False,
+        help_text="Use a mesma unidade de estoque: g, m ou un. Não altera a quantidade que você já possui.",
     )
 
     minimum_stock = forms.DecimalField(
@@ -64,6 +83,37 @@ class MaterialForm(forms.ModelForm):
 
     def clean(self):
         data = super().clean()
+        if data.get("use_package_cost"):
+            price, size = data.get("package_cost"), data.get("package_quantity")
+            if price is None:
+                self.add_error(
+                    "package_cost",
+                    "Informe o preço da embalagem, inclusive se for zero.",
+                )
+            if size is None:
+                self.add_error(
+                    "package_quantity", "Informe a quantidade por embalagem."
+                )
+            if (
+                size is not None
+                and data.get("unit") == Material.Unit.PIECE
+                and size != size.to_integral_value()
+            ):
+                self.add_error(
+                    "package_quantity",
+                    "Embalagens em unidades precisam de quantidade inteira.",
+                )
+            if price is not None and size is not None:
+                cost = (price / size).quantize(
+                    Decimal(".000001"), rounding=ROUND_HALF_UP
+                )
+                if cost > Decimal("999999.999999") or (price > 0 and cost == 0):
+                    self.add_error(
+                        "package_cost",
+                        "Custo base fora da precisão permitida; revise a embalagem.",
+                    )
+                else:
+                    data["initial_unit_cost"] = cost
         quantity = data.get("initial_quantity")
         if (
             data.get("unit") == Material.Unit.PIECE
@@ -155,7 +205,14 @@ class ReservationActionForm(forms.Form):
 class MaterialEditForm(MaterialForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for name in ("request_key", "initial_quantity", "initial_unit_cost"):
+        for name in (
+            "request_key",
+            "initial_quantity",
+            "initial_unit_cost",
+            "use_package_cost",
+            "package_cost",
+            "package_quantity",
+        ):
             self.fields.pop(name)
         self.fields["unit"].disabled = True
         self.fields["unit"].help_text = (

@@ -1,0 +1,61 @@
+{
+  "widths": [
+    320,
+    360,
+    390,
+    430,
+    600,
+    768,
+    1024,
+    1440
+  ],
+  "routes": 14,
+  "layoutChecks": 112,
+  "nativeDialog": true,
+  "focusAndEscape": true,
+  "unsavedFormPreserved": true,
+  "tableCards": true,
+  "enlargedText": "200% at 320px",
+  "landscape": true,
+  "reducedMotion": true,
+  "noJavascriptFallback": true,
+  "errors": [],
+  "accessibility": [
+    {
+      "label": "mobile dialog",
+      "violations": []
+    },
+    {
+      "label": "mobile list cards",
+      "violations": []
+    },
+    {
+      "label": "movement filters and results on mobile",
+      "violations": []
+    },
+    {
+      "label": "calendar filters and empty state on mobile",
+      "violations": []
+    },
+    {
+      "label": "general report filters and empty state on mobile",
+      "violations": []
+    },
+    {
+      "label": "general report invalid dates on mobile",
+      "violations": []
+    },
+    {
+      "label": "package cost helper on mobile",
+      "violations": []
+    },
+    {
+      "label": "desktop grouped navigation",
+      "violations": []
+    },
+    {
+      "label": "mobile login",
+      "violations": []
+    }
+  ]
+}

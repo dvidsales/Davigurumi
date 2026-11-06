@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db.models import F
+from django.db.models import F, Prefetch
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
 from datetime import timedelta
@@ -31,8 +31,17 @@ def error_message(request, exc):
 @never_cache
 @login_required
 def index(request):
-    orders = Order.objects.filter(owner=request.user).select_related(
-        "approved_version__quote", "current_version"
+    orders = (
+        Order.objects.filter(owner=request.user)
+        .select_related("approved_version__quote", "current_version")
+        .defer(
+            *(
+                relation + "__" + field
+                for relation in ("current_version", "approved_version")
+                for field in ("pdf", "public_snapshot", "internal_snapshot")
+            )
+        )
+        .prefetch_related("allocations__refunds")
     )
     return render(
         request,
@@ -45,7 +54,8 @@ def index(request):
                 quote__current_version=F("pk"),
             )
             .exclude(quote__versions__initial_order__isnull=False)
-            .select_related("quote", "quote__client")[:20],
+            .select_related("quote", "quote__client")
+            .defer("pdf", "public_snapshot", "internal_snapshot")[:20],
         },
     )
 
@@ -72,7 +82,12 @@ def detail(request, pk):
         Order.objects.select_related(
             "current_version", "approved_version__quote"
         ).prefetch_related(
-            "items__sessions", "allocations__payment", "allocations__refunds"
+            Prefetch(
+                "items__sessions",
+                queryset=ProductionSession.objects.with_effective_seconds(),
+            ),
+            "allocations__payment",
+            "allocations__refunds",
         ),
         pk=pk,
         owner=request.user,
@@ -397,7 +412,21 @@ def calendar(request):
                 | Q(current_version__delivery_date__range=(start, end))
             )
             .select_related("approved_version__quote", "current_version")
-            .prefetch_related("items__sessions__corrections")
+            .defer(
+                "approved_version__pdf",
+                "approved_version__public_snapshot",
+                "approved_version__internal_snapshot",
+                "current_version__pdf",
+                "current_version__public_snapshot",
+                "current_version__internal_snapshot",
+            )
+            .prefetch_related(
+                "items",
+                Prefetch(
+                    "items__sessions",
+                    queryset=ProductionSession.objects.with_effective_seconds(),
+                ),
+            )
         )
         if form.cleaned_data["status"]:
             orders = orders.filter(status=form.cleaned_data["status"])
@@ -447,11 +476,19 @@ def calendar(request):
                         }
                     )
         context["days"] = sorted(days.items())
-        context["unplanned"] = Order.objects.filter(
-            owner=request.user,
-            planned_start__isnull=True,
-            production_due__isnull=True,
-            status__in=["waiting", "in_progress", "paused"],
+        context["unplanned"] = (
+            Order.objects.filter(
+                owner=request.user,
+                planned_start__isnull=True,
+                production_due__isnull=True,
+                status__in=["waiting", "in_progress", "paused"],
+            )
+            .select_related("approved_version__quote")
+            .defer(
+                "approved_version__pdf",
+                "approved_version__public_snapshot",
+                "approved_version__internal_snapshot",
+            )
         )
     return render(request, "production/calendar.html", context)
 
