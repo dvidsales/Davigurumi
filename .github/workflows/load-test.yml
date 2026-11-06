@@ -1,0 +1,64 @@
+name: Teste de carga isolado
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 19 * * 5"
+permissions:
+  contents: read
+concurrency:
+  group: davigurumi-isolated-load
+  cancel-in-progress: false
+jobs:
+  measure:
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'schedule' || vars.LOAD_TEST_WEEKLY_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DAVIGURUMI_LOAD_ISOLATED: "1"
+      DAVIGURUMI_LOAD_URL: https://davigurumi-carga.onrender.com
+      DAVIGURUMI_LOAD_OUTPUT: /tmp/davigurumi-load-report
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate the one-time test account configuration
+        env:
+          DAVIGURUMI_LOAD_USERNAME: ${{ secrets.DAVIGURUMI_LOAD_USERNAME }}
+          DAVIGURUMI_LOAD_PASSWORD: ${{ secrets.DAVIGURUMI_LOAD_PASSWORD }}
+        shell: bash
+        run: |
+          if [ -z "$DAVIGURUMI_LOAD_USERNAME" ] || [ -z "$DAVIGURUMI_LOAD_PASSWORD" ]; then
+            echo '::error::Configure DAVIGURUMI_LOAD_USERNAME e DAVIGURUMI_LOAD_PASSWORD nos Actions secrets. Use somente a conta fictícia do davigurumi-carga.'
+            exit 1
+          fi
+      - name: Install isolated runner tools
+        run: npm install --prefix /tmp/davigurumi-load-tools playwright@1.62.1 --ignore-scripts --no-audit --no-fund
+      - name: Validate runner safety controls
+        run: node --test scripts/load/core.test.cjs
+      - name: Prepare synthetic data and measure gradual load
+        env:
+          NODE_PATH: /tmp/davigurumi-load-tools/node_modules
+          DAVIGURUMI_LOAD_USERNAME: ${{ secrets.DAVIGURUMI_LOAD_USERNAME }}
+          DAVIGURUMI_LOAD_PASSWORD: ${{ secrets.DAVIGURUMI_LOAD_PASSWORD }}
+        run: |
+          set -euo pipefail
+          export CHROMIUM_PATH="$(command -v google-chrome || command -v chromium)"
+          node scripts/load/run.cjs
+      - name: Publish measurement summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/davigurumi-load-report/report.md ]; then
+            cat /tmp/davigurumi-load-report/report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Save sanitized report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: davigurumi-load-report
+          path: /tmp/davigurumi-load-report/
+          retention-days: 7
+          if-no-files-found: ignore

@@ -61,6 +61,42 @@ jobs:
           if [ "$ui_ready" != "1" ]; then cat /tmp/davigurumi-ui-server.log; exit 1; fi
           node --check static/js/app.js
           node scripts/smoke_mobile.cjs
+      - name: Load runner safety and local synthetic integration
+        env:
+          NODE_PATH: /tmp/davigurumi-ui-tools/node_modules
+          DAVIGURUMI_LOAD_ISOLATED: "1"
+          DAVIGURUMI_LOAD_URL: http://127.0.0.1:8130
+          DAVIGURUMI_LOAD_USERNAME: ci_load_synthetic
+          DAVIGURUMI_LOAD_PASSWORD: Synthetic-CI-Load-Only-2026!
+        run: |
+          set -euo pipefail
+          export CHROMIUM_PATH="$(command -v google-chrome || command -v chromium)"
+          node --test scripts/load/core.test.cjs
+          python - <<'PYTHON'
+          import os, psycopg
+          with psycopg.connect(dbname="postgres", user=os.environ["POSTGRES_USER"], password=os.environ["POSTGRES_PASSWORD"], host=os.environ["POSTGRES_HOST"], sslmode="disable", autocommit=True) as connection:
+              connection.execute("CREATE DATABASE davigurumi_load_ci")
+          PYTHON
+          export POSTGRES_DB=davigurumi_load_ci
+          python manage.py migrate --noinput
+          python manage.py shell -c 'import os; from django.contrib.auth import get_user_model; get_user_model().objects.create_user(username=os.environ["DAVIGURUMI_LOAD_USERNAME"], email="ci-load@example.test", password=os.environ["DAVIGURUMI_LOAD_PASSWORD"])'
+          python manage.py runserver 127.0.0.1:8130 --noreload > /tmp/davigurumi-local-load-server.log 2>&1 &
+          local_load_pid=$!
+          trap 'kill "$local_load_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail --max-time 2 http://127.0.0.1:8130/healthz/ > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --silent --fail --max-time 2 http://127.0.0.1:8130/healthz/ > /dev/null
+          node scripts/load/run.cjs --local-smoke
+      - name: Save local runner report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-load-runner
+          path: /tmp/davigurumi-load-report/
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Save mobile review screenshots
         if: always()
         uses: actions/upload-artifact@v4
