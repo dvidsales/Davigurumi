@@ -1,0 +1,49 @@
+{
+  "layouts": 32,
+  "accessibility": [
+    {
+      "name": "inicio",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "name": "relatorios",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "name": "agenda",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "name": "relatorios-invalidos",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "name": "inicio",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "name": "relatorios",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "name": "agenda",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "name": "relatorios-invalidos",
+      "width": 1440,
+      "violations": []
+    }
+  ],
+  "pagination": true,
+  "filtersPreserved": true,
+  "unsavedFormNetworkFailure": true,
+  "errors": []
+}

@@ -1,4 +1,8 @@
 from decimal import Decimal, ROUND_HALF_UP
+from collections import defaultdict
+from django.db.models import Prefetch
+from .models import ProductionSession
+from materials.models import StockReservation
 
 CENT = Decimal(".01")
 
@@ -8,9 +12,22 @@ def cost_summary(order):
 
     estimate = materials = reserved = labor = Decimal(0)
     estimate_complete = materials_complete = reserved_complete = True
-    for item in order.items.prefetch_related(
-        "consumptions__movement__compensations", "sessions__corrections"
-    ):
+    items = list(
+        order.items.prefetch_related(
+            "consumptions__movement__compensations",
+            Prefetch(
+                "sessions", queryset=ProductionSession.objects.with_effective_seconds()
+            ),
+        )
+    )
+    reservations = defaultdict(list)
+    for reservation in StockReservation.objects.filter(
+        reference__in=[item.pk for item in items],
+        layer__material__owner_id=order.owner_id,
+        remaining__gt=0,
+    ).select_related("layer"):
+        reservations[reservation.reference].append(reservation)
+    for item in items:
         if not item.retired:
             estimate += Decimal(item.snapshot.get("cost", "0"))
             estimate_complete &= bool(item.snapshot.get("complete", False))
@@ -26,11 +43,7 @@ def cost_summary(order):
         for session in item.sessions.all():
             if session.ended_at:
                 labor += Decimal(session.effective_seconds) / 3600 * session.hourly_rate
-        from materials.models import StockReservation
-
-        for reservation in StockReservation.objects.filter(
-            reference=item.pk, layer__material__owner=order.owner
-        ).select_related("layer"):
+        for reservation in reservations[item.pk]:
             if reservation.remaining <= 0:
                 continue
             if reservation.layer.unit_cost is None:

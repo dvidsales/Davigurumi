@@ -1,3 +1,14 @@
+# Validação mais recente — auditoria de novembro de 2026
+
+Resultados recém-executados, separados da CI histórica:
+[RESULTADOS_AUDITORIA_2026_11.md](RESULTADOS_AUDITORIA_2026_11.md).
+São 210 testes PostgreSQL aprovados e 205 SQLite aprovados/5 pulados;
+112 verificações móveis, 32 layouts adicionais com dados, 31 rotas do fluxo completo,
+manifest/offline e novas checagens de segurança. Nenhum deploy foi realizado.
+As evidências abaixo são históricas e não substituem esse relatório.
+
+---
+
 # Evidências — 07/10/2026
 
 Validação com dados sintéticos no cloud. Testes automatizados não substituem homologação do usuário, operação do provedor ou avaliação legal. Não declarar T01–T26 completos.

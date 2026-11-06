@@ -1,0 +1,50 @@
+{
+  "method": "local Django test client; warm; SQL measured; no browser/network/cold-start",
+  "samples": 30,
+  "database": "postgresql",
+  "routes": {
+    "/": {
+      "median_ms": 44.88,
+      "p95_ms": 83.64,
+      "queries_min": 27,
+      "queries_max": 27,
+      "response_bytes_max": 16458
+    },
+    "/materiais/": {
+      "median_ms": 17.37,
+      "p95_ms": 27.71,
+      "queries_min": 7,
+      "queries_max": 7,
+      "response_bytes_max": 16145
+    },
+    "/orcamentos/": {
+      "median_ms": 12.28,
+      "p95_ms": 20.47,
+      "queries_min": 5,
+      "queries_max": 5,
+      "response_bytes_max": 15010
+    },
+    "/pedidos/": {
+      "median_ms": 16.34,
+      "p95_ms": 22.55,
+      "queries_min": 7,
+      "queries_max": 7,
+      "response_bytes_max": 15321
+    },
+    "/pedidos/calendario/": {
+      "median_ms": 103.42,
+      "p95_ms": 164.95,
+      "queries_min": 65,
+      "queries_max": 65,
+      "response_bytes_max": 18512
+    },
+    "/notificacoes/relatorios/": {
+      "median_ms": 45.63,
+      "p95_ms": 56.89,
+      "queries_min": 22,
+      "queries_max": 22,
+      "response_bytes_max": 17644
+    }
+  },
+  "cost_summary_50_sessions_queries": 57
+}

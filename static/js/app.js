@@ -176,3 +176,21 @@ if ('ResizeObserver' in window) {
     if (height > 0) document.documentElement.style.setProperty('--bottom-height', `${height}px`);
   }).observe(bottomBar);
 }
+
+// Indicative preview only; the server recalculates with Decimal on submission.
+const packageOption = document.querySelector('#id_use_package_cost');
+if (packageOption) {
+  const price = document.querySelector('#id_package_cost');
+  const size = document.querySelector('#id_package_quantity');
+  const unit = document.querySelector('#id_unit');
+  const output = document.querySelector('[data-package-preview]');
+  const previewPackage = () => {
+    const amount = Number(price.value.replace(',', '.'));
+    const quantity = Number(size.value.replace(',', '.'));
+    output.textContent = packageOption.checked && price.value.trim() && Number.isFinite(amount) && amount >= 0 && Number.isFinite(quantity) && quantity > 0
+      ? `Prévia: R$ ${(amount / quantity).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 6})} por ${unit.value}. O valor definitivo será calculado ao salvar.`
+      : 'Ao marcar a opção, o custo calculado substitui o custo base informado acima.';
+  };
+  for (const field of [packageOption, price, size, unit]) field.addEventListener('input', previewPackage);
+  previewPackage();
+}

@@ -1,5 +1,6 @@
 """Private Supabase objects, always served through Django authorization."""
 
+from .performance import timed_operation
 import json
 from io import BytesIO
 from pathlib import PurePosixPath
@@ -48,6 +49,7 @@ class SupabasePrivateStorage(Storage):
             raise ValidationError("Caminho de arquivo privado inválido.")
         return name
 
+    @timed_operation("remote")
     def request(self, method, path, data=None, missing=False, upsert=False):
         headers = {
             "Authorization": "Bearer " + settings.SUPABASE_SERVICE_KEY,

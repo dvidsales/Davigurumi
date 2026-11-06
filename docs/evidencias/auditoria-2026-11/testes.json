@@ -1,0 +1,26 @@
+{
+  "postgres": {
+    "discovered": 210,
+    "passed": 210,
+    "skipped": 0,
+    "seconds": 107.028
+  },
+  "sqlite": {
+    "discovered": 210,
+    "passed": 205,
+    "skipped": 5,
+    "seconds": 27.016
+  },
+  "pip_audit": "No known vulnerabilities found",
+  "bandit_threshold": "-ll; no issues identified",
+  "deploy_check": {
+    "errors": 0,
+    "warnings": [
+      "security.W005",
+      "security.W021"
+    ],
+    "configuration": "synthetic, not Render panel"
+  },
+  "baseline_commit": "79b0de710bec4bb6e8df696cedd730744ac497a3",
+  "publication": "none; no new CI run"
+}

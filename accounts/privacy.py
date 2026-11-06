@@ -18,6 +18,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 
 from .models import DemoWorkspace
+from config.performance import timed_operation
 
 
 def ledger_root():
@@ -54,6 +55,7 @@ def ledger_records():
     return [read_tombstone(path.stem) for path in sorted(ledger_root().glob("*.json"))]
 
 
+@timed_operation("ledger")
 def read_tombstone(owner_id):
     name = str(uuid.UUID(str(owner_id))) + ".json"
     try:

@@ -8,6 +8,8 @@ from materials.models import Material, StockReservation
 from production.models import Order, ProductionSession
 from sales.models import QuoteVersion, Client
 from projects.models import Project
+from materials.selectors import stock_levels
+from production.selectors import outstanding_balances
 
 
 class PeriodForm(forms.Form):
@@ -23,7 +25,7 @@ class PeriodForm(forms.Form):
         empty_label="Todos",
     )
     project = forms.ModelChoiceField(
-        label="Projeto",
+        label="Peça",
         queryset=Project.objects.none(),
         required=False,
         empty_label="Todos",
@@ -100,11 +102,9 @@ def replenishment(owner):
                 reserved = reserved_totals.get((str(item.pk), material_id), Decimal(0))
                 required[material_id] += max(Decimal(0), quantity - consumed - reserved)
     rows = []
-    for material in Material.objects.filter(
-        owner=owner, pk__in=required
-    ).prefetch_related("movements", "layers"):
+    for material in stock_levels(owner).filter(pk__in=required):
         shortage = max(
-            Decimal(0), required[str(material.pk)] - material.available_stock
+            Decimal(0), required[str(material.pk)] - material.ledger_available
         )
         if shortage:
             rows.append(
@@ -119,16 +119,30 @@ def replenishment(owner):
 
 def overview(owner):
     today = timezone.localdate()
-    orders = (
-        Order.objects.filter(owner=owner)
-        .select_related("current_version")
-        .prefetch_related("allocations__refunds")
-    )
+    orders = Order.objects.filter(owner=owner)
     active = orders.filter(status__in=["waiting", "in_progress", "paused"])
-    balances = sum(
-        (order.balance for order in orders.exclude(status="cancelled")), Decimal(0)
-    )
+    balances = outstanding_balances(owner).aggregate(total=Sum("ledger_balance"))[
+        "total"
+    ] or Decimal(0)
     return {
+        "period_start": today.replace(day=1),
+        "period_end": today,
+        "next_orders": active.filter(production_due__gte=today)
+        .select_related("approved_version__quote")
+        .defer(
+            "approved_version__pdf",
+            "approved_version__internal_snapshot",
+            "approved_version__public_snapshot",
+        )
+        .order_by("production_due", "id")[:5],
+        "overdue_orders": active.filter(production_due__lt=today)
+        .select_related("approved_version__quote")
+        .defer(
+            "approved_version__pdf",
+            "approved_version__internal_snapshot",
+            "approved_version__public_snapshot",
+        )
+        .order_by("production_due", "id")[:5],
         "active_orders": active.count(),
         "late_orders": active.filter(production_due__lt=today).count(),
         "open_balance": balances,
@@ -226,10 +240,8 @@ def export_order_report(orders, format):
 
 def below_minimum(owner):
     rows = []
-    for material in Material.objects.filter(
-        owner=owner, minimum_stock__gt=0, is_archived=False
-    ).prefetch_related("movements", "layers"):
-        available = material.available_stock
+    for material in stock_levels(owner).filter(minimum_stock__gt=0, is_archived=False):
+        available = material.ledger_available
         if available < material.minimum_stock:
             rows.append(
                 {

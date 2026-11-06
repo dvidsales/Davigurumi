@@ -40,6 +40,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "config.performance.PerformanceMiddleware",
     "accounts.middleware.DevelopmentSecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -66,6 +67,7 @@ TEMPLATES = [
         },
     }
 ]
+PERFORMANCE_LOGGING = os.getenv("DJANGO_PERFORMANCE_LOGGING", "0") == "1"
 WSGI_APPLICATION = "config.wsgi.application"
 if os.getenv("POSTGRES_DB"):
     DATABASES = {
@@ -77,6 +79,8 @@ if os.getenv("POSTGRES_DB"):
             "HOST": os.getenv("POSTGRES_HOST", "localhost"),
             "PORT": os.getenv("POSTGRES_PORT", "5432"),
             "OPTIONS": {"sslmode": os.getenv("POSTGRES_SSLMODE", "require")},
+            "CONN_MAX_AGE": int(os.getenv("POSTGRES_CONN_MAX_AGE", "0")),
+            "CONN_HEALTH_CHECKS": True,
         }
     }
 else:
@@ -87,6 +91,10 @@ else:
             "NAME": BASE_DIR / ".local" / "db.sqlite3",
         }
     }
+if os.getenv("POSTGRES_DB") and not 0 <= DATABASES["default"]["CONN_MAX_AGE"] <= 300:
+    raise ImproperlyConfigured(
+        "POSTGRES_CONN_MAX_AGE deve estar entre 0 e 300 segundos."
+    )
 AUTH_USER_MODEL = "accounts.User"
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -203,6 +211,11 @@ LOGGING = {
         "console": {"class": "logging.StreamHandler", "filters": ["portal_redaction"]}
     },
     "loggers": {
+        "davigurumi.performance": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "django.server": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "django.request": {

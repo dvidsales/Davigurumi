@@ -77,3 +77,18 @@ Use **Manual Deploy → Deploy latest commit** após revisar e integrar a atuali
 Faça exportações de **pacote completo** por conta e guarde fora desses provedores, protegidas: contêm dados pessoais e imagens. A importação exige destino vazio e preserva IDs; não é sincronização entre duas contas da mesma instalação. Backups completos da instalação também precisam de `pg_dump` do schema privado, dos dois buckets e das chaves; não presuma backups automáticos do plano gratuito. Registros de exclusão mais recentes devem ser conservados separadamente e reaplicados após qualquer restauração, conforme [EXCLUSAO_RETENCAO.md](EXCLUSAO_RETENCAO.md).
 
 O armazenamento remoto e a restauração foram testados com simulação do protocolo. A integração real Render/Supabase precisa ser conferida após criar suas contas: este ambiente não tem suas credenciais. A revisão não certifica ausência de vulnerabilidades nem libera uso público com dados reais.
+
+
+## Verificação de versão e observabilidade (revisão de novembro)
+
+Após um deploy futuro desta revisão, `/version/` informa o prefixo do SHA fornecido
+pelo Render (`RENDER_GIT_COMMIT`); comparar com o commit selecionado no deploy.
+`unknown` indica ausência de identificador válido, não sucesso na identificação.
+A rota não mostra secrets ou opções internas e não substitui `/healthz/`.
+
+Não há mudança obrigatória nas variáveis, no plano gratuito ou no banco para os
+ajustes. Instrumentação (`DJANGO_PERFORMANCE_LOGGING=1`) é opcional e permanece
+inativa por padrão. Persistência (`POSTGRES_CONN_MAX_AGE`, 0–300 s) conserva padrão
+zero; não habilitar sem conferir Session pooler, schema e orçamento de conexões.
+Ver [LEDGER_E_OBSERVABILIDADE.md](LEDGER_E_OBSERVABILIDADE.md) e
+[RESULTADOS_AUDITORIA_2026_11.md](RESULTADOS_AUDITORIA_2026_11.md).

@@ -228,6 +228,32 @@ class RemotePrivateStorageTests(TransactionTestCase):
             with self.assertRaises(ValidationError):
                 SupabasePrivateStorage().check_private()
 
+    def test_negative_lookup_does_not_mask_later_tombstone_or_restored_user(self):
+        self.assertIsNone(read_tombstone(self.owner.pk))
+        record = {
+            "owner": str(self.owner.pk),
+            "schema": 1,
+            "files": [],
+            "case": "synthetic-case",
+            "policy": "synthetic-policy",
+        }
+        write_tombstone(record)
+        # Simulate an old database/user state: the independent ledger must win.
+        self.owner.is_active = True
+        self.owner.save(update_fields=["is_active"])
+        with self.assertRaises(ValidationError):
+            assert_not_erased(self.owner.pk)
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.get(reverse("dashboard")).status_code, 403)
+
+    def test_bucket_privacy_is_rechecked_after_negative_lookup(self):
+        self.assertIsNone(read_tombstone(self.owner.pk))
+        with patch.object(
+            SupabasePrivateStorage, "request", return_value=b'{"public":true}'
+        ):
+            with self.assertRaises(ValidationError):
+                read_tombstone(self.owner.pk)
+
 
 class ProxyAndHealthTests(TestCase):
     def test_forwarded_ip_not_trusted_by_default_and_trusted_proxy_uses_last_ip(self):

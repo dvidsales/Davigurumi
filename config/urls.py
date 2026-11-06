@@ -2,10 +2,11 @@ from django.contrib.auth import views as auth
 from django.urls import include, path
 from accounts.views import dashboard, signup, SafePasswordResetView
 from .pwa import manifest, service_worker
-from .health import health
+from .health import health, version
 from accounts import demo, security
 
 urlpatterns = [
+    path("version/", version, name="version"),
     path("healthz/", health, name="health"),
     path("manifest.webmanifest", manifest, name="manifest"),
     path("service-worker.js", service_worker, name="service_worker"),
